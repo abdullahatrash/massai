@@ -10,6 +10,10 @@ import {
 import keycloak from "./keycloak";
 import { setAccessTokenProvider } from "../api/client";
 
+// Module-level flag: persists across React StrictMode's mount→unmount→remount cycle.
+// keycloak-js throws if init() is called more than once on the same instance.
+let keycloakInitStarted = false;
+
 type AuthUser = {
   email: string | null;
   name: string | null;
@@ -118,19 +122,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     };
 
-    void keycloak
-      .init({
-        checkLoginIframe: false,
-        onLoad: "check-sso",
-        pkceMethod: "S256",
-        silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
-      })
-      .then(syncFromKeycloak)
-      .catch((error) => {
-        const message =
-          error instanceof Error ? error.message : "Unable to initialize Keycloak.";
-        handleFailure(message);
-      });
+    if (keycloakInitStarted) {
+      // StrictMode second mount: Keycloak already initialised — just sync current state.
+      syncFromKeycloak();
+    } else {
+      keycloakInitStarted = true;
+      void keycloak
+        .init({
+          checkLoginIframe: false,
+          onLoad: "check-sso",
+          pkceMethod: "S256",
+          silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+        })
+        .then(syncFromKeycloak)
+        .catch((error) => {
+          const message =
+            error instanceof Error ? error.message : "Unable to initialize Keycloak.";
+          handleFailure(message);
+        });
+    }
 
     const refreshHandle = window.setInterval(() => {
       if (!keycloak.authenticated) {
