@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Tasowheel Update Payload",
+  "type": "object",
+  "required": [
+    "routingStep",
+    "stepName",
+    "stepStatus"
+  ],
+  "properties": {
+    "routingStep": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stepName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stepStatus": {
+      "type": "string",
+      "enum": [
+        "IN_PROGRESS",
+        "COMPLETE"
+      ]
+    },
+    "setupTimeActualMin": {
+      "type": "number",
+      "minimum": 0
+    },
+    "cycleTimeActualSec": {
+      "type": "number",
+      "minimum": 0
+    },
+    "downtimeMinutes": {
+      "type": "number",
+      "minimum": 0
+    },
+    "energyKwh": {
+      "type": "number",
+      "minimum": 0
+    },
+    "carbonKgCo2e": {
+      "type": "number",
+      "minimum": 0
+    },
+    "milestone_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "milestoneRef": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

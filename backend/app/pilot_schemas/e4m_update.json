@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "E4M Update Payload",
+  "type": "object",
+  "required": [
+    "currentPhase",
+    "completionPct"
+  ],
+  "properties": {
+    "currentPhase": {
+      "type": "string",
+      "pattern": "^M[1-6](?:_[A-Z0-9]+)*$"
+    },
+    "completionPct": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "approvalRequired": {
+      "type": "boolean"
+    },
+    "deliverables": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "testResults": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "testName": {
+            "type": "string"
+          },
+          "result": {
+            "type": "string",
+            "enum": [
+              "PASS",
+              "FAIL",
+              "BLOCKED"
+            ]
+          },
+          "defects": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "result"
+        ],
+        "additionalProperties": true
+      }
+    },
+    "issues": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "CRITICAL"
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "milestone_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "milestoneRef": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

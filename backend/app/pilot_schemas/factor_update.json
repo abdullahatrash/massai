@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Factor Update Payload",
+  "type": "object",
+  "required": [
+    "quantityProduced",
+    "quantityPlanned",
+    "currentStage",
+    "qualityPassRate"
+  ],
+  "properties": {
+    "quantityProduced": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "quantityPlanned": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "currentStage": {
+      "type": "string",
+      "enum": [
+        "TURNING",
+        "HEAT_TREATMENT",
+        "GRINDING",
+        "INSPECTION"
+      ]
+    },
+    "qualityPassRate": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "machineUtilization": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "qualityRejectCount": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "shiftsCompleted": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "estimatedCompletionDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "milestone_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "milestoneRef": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

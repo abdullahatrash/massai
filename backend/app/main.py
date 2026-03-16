@@ -10,6 +10,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.router import router as api_v1_router
 from app.core.config import get_settings
+from app.core.exception_handlers import register_exception_handlers
+from app.core.health import get_dependency_health, router as health_router
 from app.core.logging import configure_logging
 
 configure_logging()
@@ -20,6 +22,17 @@ logger = logging.getLogger("massai.api")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    dependency_health = await get_dependency_health(settings=settings)
+    if dependency_health["status"] != "ok":
+        logger.warning(
+            "application_started_degraded",
+            extra={
+                "environment": settings.environment,
+                "blockchain_adapter": settings.blockchain_adapter,
+                "db_status": dependency_health["db"],
+                "auth_status": dependency_health["auth"],
+            },
+        )
     logger.info(
         "application_started",
         extra={
@@ -46,6 +59,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+register_exception_handlers(app)
+app.include_router(health_router)
 app.include_router(api_v1_router, prefix=settings.api_v1_prefix)
 
 
@@ -77,11 +92,3 @@ async def log_requests(request: Request, call_next):
         },
     )
     return response
-
-
-@app.get("/health", tags=["health"])
-async def healthcheck() -> dict[str, str]:
-    return {
-        "status": "ok",
-        "environment": settings.environment,
-    }

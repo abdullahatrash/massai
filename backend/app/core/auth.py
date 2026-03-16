@@ -6,13 +6,14 @@ from time import time
 from typing import Any
 
 import httpx
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import jwk, jwt
 from jose.exceptions import JOSEError
 from jose.utils import base64url_decode
 
 from app.core.config import Settings, get_settings
+from app.core.response import ApiException
 
 bearer_scheme = HTTPBearer(auto_error=False)
 _jwks_lock = asyncio.Lock()
@@ -39,25 +40,28 @@ class CurrentUser:
         return self.is_admin or contract_id in self.contract_ids
 
 
-def _unauthorized(detail: str) -> HTTPException:
-    return HTTPException(
+def _unauthorized(detail: str) -> ApiException:
+    return ApiException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail=detail,
+        code="UNAUTHORIZED",
+        message=detail,
         headers={"WWW-Authenticate": "Bearer"},
     )
 
 
-def _forbidden(detail: str) -> HTTPException:
-    return HTTPException(
+def _forbidden(detail: str) -> ApiException:
+    return ApiException(
         status_code=status.HTTP_403_FORBIDDEN,
-        detail=detail,
+        code="FORBIDDEN",
+        message=detail,
     )
 
 
-def _service_unavailable(detail: str) -> HTTPException:
-    return HTTPException(
+def _service_unavailable(detail: str) -> ApiException:
+    return ApiException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail=detail,
+        code="AUTH_SERVICE_UNAVAILABLE",
+        message=detail,
     )
 
 
@@ -110,7 +114,7 @@ async def get_jwks(*, settings: Settings | None = None, force_refresh: bool = Fa
         try:
             _jwks_cache = await fetch_jwks(settings)
             _jwks_cached_at = now
-        except HTTPException:
+        except ApiException:
             raise
         except httpx.HTTPError as exc:
             raise _service_unavailable("Authentication service unavailable.") from exc

@@ -9,7 +9,7 @@
   "quantity_total": 6,
   "delivery_in_days": 120,
   "activated_days_ago": 3,
-  "blockchain_contract_address": "0xE4M0000000000000000000000000000000000001",
+  "blockchain_contract_address": "0xE4000000000000000000000000000000000000E4",
   "config": {
     "public_id": "contract-e4m-001",
     "pilot_label": "E4M",

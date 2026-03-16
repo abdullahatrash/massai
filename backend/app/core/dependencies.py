@@ -3,9 +3,10 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Annotated
 
-from fastapi import Depends, HTTPException, Request, status
+from fastapi import Depends, Request, status
 
 from app.core.auth import CurrentUser, get_current_user
+from app.core.response import ApiException
 
 
 def require_roles(*required_roles: str) -> Callable[..., CurrentUser]:
@@ -13,9 +14,10 @@ def require_roles(*required_roles: str) -> Callable[..., CurrentUser]:
         current_user: Annotated[CurrentUser, Depends(get_current_user)],
     ) -> CurrentUser:
         if not current_user.has_role(*required_roles):
-            raise HTTPException(
+            raise ApiException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have permission to perform this action.",
+                code="FORBIDDEN",
+                message="You do not have permission to perform this action.",
             )
         return current_user
 
@@ -41,14 +43,16 @@ def require_contract_access(contract_id_param: str = "contract_id") -> Callable[
     ) -> CurrentUser:
         contract_id = request.path_params.get(contract_id_param)
         if contract_id is None:
-            raise HTTPException(
+            raise ApiException(
                 status_code=500,
-                detail=f"Missing contract path parameter '{contract_id_param}'.",
+                code="INTERNAL_ERROR",
+                message=f"Missing contract path parameter '{contract_id_param}'.",
             )
         if not current_user.can_access_contract(str(contract_id)):
-            raise HTTPException(
+            raise ApiException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="You do not have access to this contract.",
+                code="FORBIDDEN",
+                message="You do not have access to this contract.",
             )
         return current_user
 
