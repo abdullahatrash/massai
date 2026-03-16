@@ -1,0 +1,42 @@
+{
+  "scenario": "tasowheel_dispute",
+  "initialPayload": {
+    "routingStep": 40,
+    "stepName": "Final Dispatch Check",
+    "stepStatus": "IN_PROGRESS",
+    "setupTimeActualMin": 25,
+    "cycleTimeActualSec": 165,
+    "downtimeMinutes": 17,
+    "energyKwh": 29.5,
+    "carbonKgCo2e": 11.1
+  },
+  "steps": [
+    {
+      "updateType": "QUALITY_EVENT",
+      "payload": {
+        "routingStep": 40,
+        "stepName": "Final Dispatch Check",
+        "stepStatus": "IN_PROGRESS",
+        "downtimeMinutes": 32,
+        "cycleTimeActualSec": 198
+      }
+    },
+    {
+      "updateType": "MILESTONE_COMPLETE",
+      "payload": {
+        "milestoneRef": "STEP_40",
+        "routingStep": 40,
+        "stepName": "Final Dispatch Check",
+        "stepStatus": "COMPLETE",
+        "setupTimeActualMin": 25,
+        "cycleTimeActualSec": 190,
+        "downtimeMinutes": 32,
+        "energyKwh": 33.0,
+        "carbonKgCo2e": 13.0
+      },
+      "evidence": [
+        "https://example.com/tasowheel/final-check-dispute"
+      ]
+    }
+  ]
+}

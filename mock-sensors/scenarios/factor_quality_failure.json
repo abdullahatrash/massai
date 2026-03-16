@@ -1,0 +1,39 @@
+{
+  "scenario": "factor_quality_failure",
+  "initialPayload": {
+    "quantityProduced": 1000,
+    "quantityPlanned": 12000,
+    "currentStage": "TURNING",
+    "qualityPassRate": 0.991,
+    "machineUtilization": 0.79,
+    "qualityRejectCount": 4,
+    "shiftsCompleted": 2
+  },
+  "steps": [
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "quantityProduced": 1800,
+        "qualityPassRate": 0.978,
+        "qualityRejectCount": 10
+      }
+    },
+    {
+      "updateType": "QUALITY_EVENT",
+      "payload": {
+        "quantityProduced": 2200,
+        "qualityPassRate": 0.81,
+        "qualityRejectCount": 36,
+        "machineUtilization": 0.71
+      }
+    },
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "quantityProduced": 2600,
+        "qualityPassRate": 0.83,
+        "qualityRejectCount": 44
+      }
+    }
+  ]
+}

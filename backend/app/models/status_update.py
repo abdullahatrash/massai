@@ -22,6 +22,10 @@ class StatusUpdate(UUIDPrimaryKeyMixin, Base):
     sensor_id: Mapped[str | None] = mapped_column(String)
     timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     payload: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
+    evidence: Mapped[list[Any] | None] = mapped_column(
+        JSONB,
+        server_default=text("'[]'::jsonb"),
+    )
     processed: Mapped[bool | None] = mapped_column(
         Boolean,
         server_default=text("false"),

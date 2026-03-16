@@ -1,0 +1,46 @@
+{
+  "scenario": "e4m_test_failure",
+  "initialPayload": {
+    "currentPhase": "M3",
+    "completionPct": 70,
+    "approvalRequired": true,
+    "deliverables": [
+      "Integration package"
+    ],
+    "testResults": [
+      {
+        "testName": "System smoke",
+        "result": "PASS",
+        "defects": 0
+      }
+    ],
+    "issues": []
+  },
+  "steps": [
+    {
+      "updateType": "QUALITY_EVENT",
+      "payload": {
+        "completionPct": 92,
+        "testResults": [
+          {
+            "testName": "System smoke",
+            "result": "PASS",
+            "defects": 0
+          },
+          {
+            "testName": "Thermal endurance",
+            "result": "FAIL",
+            "defects": 2
+          }
+        ],
+        "issues": [
+          {
+            "severity": "HIGH",
+            "status": "OPEN",
+            "title": "Thermal drift"
+          }
+        ]
+      }
+    }
+  ]
+}

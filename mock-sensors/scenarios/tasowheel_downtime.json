@@ -1,0 +1,31 @@
+{
+  "scenario": "tasowheel_downtime",
+  "initialPayload": {
+    "routingStep": 20,
+    "stepName": "CNC Machining",
+    "stepStatus": "IN_PROGRESS",
+    "setupTimeActualMin": 30,
+    "cycleTimeActualSec": 147,
+    "downtimeMinutes": 6,
+    "energyKwh": 22.4,
+    "carbonKgCo2e": 8.5
+  },
+  "steps": [
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "downtimeMinutes": 48,
+        "cycleTimeActualSec": 188,
+        "energyKwh": 30.8
+      }
+    },
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "downtimeMinutes": 64,
+        "cycleTimeActualSec": 205,
+        "carbonKgCo2e": 11.7
+      }
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "scenario": "e4m_delay",
+  "initialPayload": {
+    "currentPhase": "M2",
+    "completionPct": 32,
+    "approvalRequired": true,
+    "deliverables": [
+      "Concept package"
+    ],
+    "testResults": [],
+    "issues": [
+      {
+        "severity": "MEDIUM",
+        "status": "OPEN",
+        "title": "Late dependency"
+      }
+    ]
+  },
+  "steps": [
+    {
+      "updateType": "PHASE_CHANGE",
+      "payload": {
+        "currentPhase": "M2",
+        "completionPct": 41,
+        "issues": [
+          {
+            "severity": "MEDIUM",
+            "status": "OPEN",
+            "title": "Late dependency"
+          },
+          {
+            "severity": "LOW",
+            "status": "OPEN",
+            "title": "Document revision pending"
+          }
+        ]
+      }
+    }
+  ]
+}

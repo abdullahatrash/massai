@@ -1,0 +1,35 @@
+{
+  "scenario": "e4m_milestone_complete",
+  "initialPayload": {
+    "currentPhase": "M1",
+    "completionPct": 94,
+    "approvalRequired": false,
+    "deliverables": [
+      "Architecture brief",
+      "Interface inventory"
+    ],
+    "testResults": [],
+    "issues": []
+  },
+  "steps": [
+    {
+      "updateType": "MILESTONE_COMPLETE",
+      "payload": {
+        "milestoneRef": "M1",
+        "currentPhase": "M1",
+        "completionPct": 100,
+        "approvalRequired": false,
+        "deliverables": [
+          "Architecture brief",
+          "Interface inventory",
+          "Phase sign-off packet"
+        ],
+        "testResults": [],
+        "issues": []
+      },
+      "evidence": [
+        "https://example.com/e4m/m1-signoff"
+      ]
+    }
+  ]
+}

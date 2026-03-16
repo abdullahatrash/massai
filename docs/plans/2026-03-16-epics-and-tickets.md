@@ -61,47 +61,47 @@
 | E1-T1  | Monorepo Scaffold + Docker Compose          | ✅      | All scaffold + Docker Compose criteria met. Review → `reviews/E1-T1-E1-T2-review.md`                                                                                                          |
 | E1-T2  | Backend Project Init (FastAPI + uv)         | ✅      | FastAPI + uv + structured logging + lifespan handler. Review → `reviews/E1-T1-E1-T2-review.md`                                                                                                |
 | E1-T3  | Database Schema + Migrations                | ✅      | Alembic bootstrap + initial 5-table schema verified with live upgrade/downgrade cycle                                                                                                         |
-| E1-T4  | Database Seed Data (3 Pilot Contracts)      | ✅      | 3 pilot contracts + 14 milestones seeded idempotently; API list verification deferred to E3-T1                                                                                                |
+| E1-T4  | Database Seed Data (3 Pilot Contracts)      | ✅      | 3 pilot contracts + 14 milestones seeded idempotently; contract list verification completed in E3-T1                                                                                          |
 | E1-T5  | Standardised API Response Envelope          | ✅      | Success/error envelope helpers, exception handlers, and unit coverage added in backend                                                                                                        |
 | E1-T6  | Error Handling Strategy                     | ✅      | Health/readiness routes, INVALID_JSON handling, DB 503 envelope, auth-service 503 path, and integration coverage added                                                                        |
 | E1-T7  | Test Infrastructure Setup                   | ✅      | Pytest config, shared conftest fixtures, and working pytest/unittest discovery now in place                                                                                                    |
 | **E2** | **Provider Ingest API**                     |        |                                                                                                                                                                                               |
 | E2-T1  | Pilot JSON Schemas                          | ✅      | `backend/app/pilot_schemas/*.json` + `app/core/schema_validator.py` + unit coverage added                                                                                                    |
-| E2-T2  | Ingest Endpoint (Core)                      | 🔲     |                                                                                                                                                                                               |
-| E2-T3  | Monitoring Service (Update Processing)      | 🔲     |                                                                                                                                                                                               |
-| E2-T4  | Milestone Auto-Verification                 | 🔲     |                                                                                                                                                                                               |
-| E2-T5  | Consumer Milestone Approval Endpoint        | 🔲     |                                                                                                                                                                                               |
-| E2-T6  | Python Background Simulators                | 🔲     |                                                                                                                                                                                               |
-| E2-T7  | Pilot Extensibility Validation              | 🔲     |                                                                                                                                                                                               |
+| E2-T2  | Ingest Endpoint (Core)                      | ✅      | `POST /api/v1/ingest/{contract_id}` added with provider auth, contract ownership checks, schema validation, persistence, and route tests                                                    |
+| E2-T3  | Monitoring Service (Update Processing)      | ✅      | `MonitoringService.process_update()` added and wired into ingest for milestone submission, contract state updates, phase changes, queueing quality events, and processed flag updates         |
+| E2-T4  | Milestone Auto-Verification                 | ✅      | `MilestoneService.evaluate_submission()` added; non-approval milestones auto-complete/reject, approval-required milestones queue consumer approval notifications, and completions queue blockchain work |
+| E2-T5  | Consumer Milestone Approval Endpoint        | ✅      | Consumer approve/reject endpoints added with ownership checks, invalid-state handling, blockchain logging on approval, rejection evidence capture, and provider notification queueing          |
+| E2-T6  | Python Background Simulators                | ✅      | Scenario-driven background simulators added in `mock-sensors/` with service-account auth, `STOP_AFTER_STEPS`, scenario assets, compose env wiring, and simulator unit coverage               |
+| E2-T7  | Pilot Extensibility Validation              | ✅      | `PILOT_TEST` schema plus ingest integration coverage added, including valid, invalid, and missing-schema cases to demonstrate schema-driven pilot extensibility                               |
 | **E3** | **Consumer Read API & WebSocket**           |        |                                                                                                                                                                                               |
-| E3-T1  | Contract List & Overview Endpoints          | 🔲     |                                                                                                                                                                                               |
-| E3-T2  | Milestones & Timeline Endpoints             | 🔲     |                                                                                                                                                                                               |
-| E3-T3  | Alerts Endpoints                            | 🔲     |                                                                                                                                                                                               |
-| E3-T4  | Analytics Endpoint                          | 🔲     |                                                                                                                                                                                               |
-| E3-T5  | WebSocket — Real-Time Push                  | 🔲     |                                                                                                                                                                                               |
-| E3-T6  | Documents API Endpoint                      | 🔲     |                                                                                                                                                                                               |
-| E3-T7  | Audit Export Endpoint                       | 🔲     |                                                                                                                                                                                               |
-| E3-T8  | Admin Contract Onboarding + Blockchain Sync | 🔲     |                                                                                                                                                                                               |
+| E3-T1  | Contract List & Overview Endpoints          | ✅      | `GET /api/v1/contracts` + `GET /api/v1/contracts/{id}` added with consumer/admin access checks, progress + status badge logic, next-milestone overview, and full backend test coverage       |
+| E3-T2  | Milestones & Timeline Endpoints             | ✅      | `GET /api/v1/contracts/{id}/milestones`, `GET /api/v1/contracts/{id}/milestones/{mId}`, and `GET /api/v1/contracts/{id}/timeline` added with overdue flags, approval markers, evidence payloads, and plain-English timeline events |
+| E3-T3  | Alerts Endpoints                            | ✅      | `GET /api/v1/contracts/{id}/alerts`, `GET /api/v1/contracts/{id}/alerts/history`, and `POST /api/v1/contracts/{id}/alerts/{aId}/acknowledge` added with severity ordering, history filters, and acknowledge flow coverage |
+| E3-T4  | Analytics Endpoint                          | ✅      | `GET /api/v1/contracts/{id}/analytics` added with pilot-adaptive KPI payloads for Factor, Tasowheel, and E4M plus shared progress/on-track metrics and backend coverage                     |
+| E3-T5  | WebSocket — Real-Time Push                  | ✅      | `WS /ws/contracts/{contractId}` added with connection manager, token-authenticated consumer/admin access, ingest-triggered broadcasts, multi-client handling, and disconnect coverage         |
+| E3-T6  | Documents API Endpoint                      | ✅      | `GET /api/v1/contracts/{id}/documents` and `GET /api/v1/contracts/{id}/milestones/{mId}/documents` added with evidence aggregation, milestone filtering, non-document evidence skipping, and auth coverage |
+| E3-T7  | Audit Export Endpoint                       | ✅      | `GET /api/v1/contracts/{id}/audit-export` added with full audit payload assembly, blockchain verification markers, transaction hashes limited to export, provider-role denial, and JSON-first PDF fallback |
+| E3-T8  | Admin Contract Onboarding + Blockchain Sync | ✅      | `POST /api/v1/admin/contracts`, `GET /api/v1/admin/contracts`, and `GET /api/v1/admin/contracts/{id}/blockchain-sync` added with admin-only access, mock blockchain metadata onboarding, milestone seeding, duplicate/address validation, and full backend coverage |
 | **E4** | **Alert & Rule Engine**                     |        |                                                                                                                                                                                               |
-| E4-T1  | Rule Engine Core                            | 🔲     |                                                                                                                                                                                               |
-| E4-T2  | Alert Severity & Blockchain Logging         | 🔲     |                                                                                                                                                                                               |
-| E4-T3  | No-Data-Received Background Worker          | 🔲     |                                                                                                                                                                                               |
-| E4-T4  | Notification Delivery Service               | 🔲     |                                                                                                                                                                                               |
+| E4-T1  | Rule Engine Core                            | ✅      | Strategy-based rule engine added with QUALITY_THRESHOLD, DELAY, TEST_FAILURE, and MILESTONE_OVERDUE evaluation wired into ingest/monitoring plus backend coverage                             |
+| E4-T2  | Alert Severity & Blockchain Logging         | ✅      | HIGH/CRITICAL alerts now queue background blockchain logging with mock adapter persistence, retry handling, verification flags in alert APIs, and backend coverage                             |
+| E4-T3  | No-Data-Received Background Worker          | ✅      | Lifespan-registered no-data worker added with configurable polling, MEDIUM→HIGH severity escalation, idempotent alert updates, ingest-driven auto-resolution, and backend coverage            |
+| E4-T4  | Notification Delivery Service               | ✅      | Notification service/API added with unread list + mark-read flow, unread badge counts on contracts, milestone/alert/state-change triggers, optional SMTP delivery, and backend coverage        |
 | **E5** | **Visual Mock Sensor Environment**          |        |                                                                                                                                                                                               |
 | E5-T1  | Sensor UI Scaffold & Layout                 | 🔲     |                                                                                                                                                                                               |
 | E5-T2  | Scenario Runner (Automated Playback)        | 🔲     |                                                                                                                                                                                               |
 | E5-T3  | Manual Update Form                          | 🔲     |                                                                                                                                                                                               |
 | E5-T4  | Live Event Log Panel                        | 🔲     |                                                                                                                                                                                               |
-| E5-T5  | Milestone Trigger Panel                     | 🔲     |                                                                                                                                                                                               |
+| E5-T5  | Milestone Trigger Panel                     | ✅      | Milestone trigger panel in simulator Milestones tab with Submit Complete, approval tooltip, Open Consumer View. Review → `reviews/E5-T5-E6-T6-review.md` |
 | **E6** | **Consumer Dashboard (Frontend)**           |        |                                                                                                                                                                                               |
-| E6-T1  | Frontend Scaffold & Routing                 | 🔲     |                                                                                                                                                                                               |
-| E6-T2  | Contracts List Page                         | 🔲     |                                                                                                                                                                                               |
-| E6-T3  | Contract Overview Page                      | 🔲     |                                                                                                                                                                                               |
-| E6-T4  | Milestone Timeline Page                     | 🔲     |                                                                                                                                                                                               |
-| E6-T5  | Production Feed Page (Live)                 | 🔲     |                                                                                                                                                                                               |
-| E6-T6  | Alert Center Page                           | 🔲     |                                                                                                                                                                                               |
-| E6-T7  | Analytics Page                              | 🔲     |                                                                                                                                                                                               |
-| E6-T8  | Notification Bell & In-App Notifications    | 🔲     |                                                                                                                                                                                               |
+| E6-T1  | Frontend Scaffold & Routing                 | ✅      | Consumer dashboard route tree, shared layout refresh, typed API modules, React Query provider, contract sub-route scaffold, and 404/error handling added. Review → `reviews/E6-T1-T2-review.md` |
+| E6-T2  | Contracts List Page                         | ✅      | React Query contract list implemented with priority sorting, status badges, milestone progress bars, loading skeletons, empty/error states, and card navigation to contract detail routes. Review → `reviews/E6-T1-T2-review.md` |
+| E6-T3  | Contract Overview Page                      | ✅      | Live contract overview page added with delivery countdown, adaptive metrics, next milestone summary, recent activity feed, quick action links, and WebSocket-driven query refresh. Review → `reviews/E6-T3-T4-review.md` |
+| E6-T4  | Milestone Timeline Page                     | ✅      | Vertical milestone timeline implemented with expandable cards, evidence document display, rejection reasons, approval/reject actions, overdue highlighting, optimistic status updates. Review → `reviews/E6-T3-T4-review.md` |
+| E6-T5  | Production Feed Page (Live)                 | ✅      | Live production feed implemented with adaptive Factor/Tasowheel/E4M layouts, WebSocket-driven state updates, offline-delay warning, analytics-backed totals/gauges, and in-session metric sparklines. |
+| E6-T6  | Alert Center Page                           | ✅      | Alert center implemented with active alerts, acknowledge flow, filtered history, severity styling with pulsing critical indicator, empty state, and alert count badges. Review → `reviews/E5-T5-E6-T6-review.md` |
+| E6-T7  | Analytics Page                              | ✅      | Analytics page implemented with adaptive KPI cards, Recharts milestone/quality/energy/phase views, export fallback, and live refresh. Review → `reviews/E6-T7-review.md` |
+| E6-T8  | Notification Bell & In-App Notifications    | ✅      | Header notification bell with unread badge, live NOTIFICATION socket refresh, dropdown inbox, mark-all-read, /notifications page. Review → `reviews/E6-T8-review.md` |
 
 
 ---
@@ -138,6 +138,40 @@ The current agreed sequence (revised from original to wire auth in early):
 | E0-T2  | `reviews/E1-T1-E1-T2-review.md` | ✅ Closed (early) — JWT middleware in `app/core/auth.py`     | March 16, 2026 |
 | E0-T3  | `reviews/E0-T3-review.md`       | ✅ Closed — SA clients, setup.sh sync, simulator auth wired  | March 16, 2026 |
 | E0-T4  | `reviews/E0-T4-review.md`       | ✅ Closed — check-sso, PKCE, ProtectedRoute, pnpm migration  | March 16, 2026 |
+| E1-T3  | `reviews/E1-T3-E1-T4-review.md` | ✅ Closed — all 5 tables, FK naming, async migrations verified | March 16, 2026 |
+| E1-T4  | `reviews/E1-T3-E1-T4-review.md` | ✅ Closed — IMP-1 fixed (E4M invalid hex address)             | March 16, 2026 |
+| E2-T1  | `reviews/E2-T1-review.md`       | ✅ Closed — 3 minor findings; MIN-2 must be resolved before E2-T3 | March 16, 2026 |
+| E2-T2  | `reviews/E2-T2-review.md`       | ✅ Closed — IMP-1: add index/public_id col before E2-T3           | March 16, 2026 |
+| E2-T3  | `reviews/E2-T3-review.md`       | ✅ Closed — IMP-1: raise on bad milestone_ref; IMP-2: use alerts table not JSONB queue | March 16, 2026 |
+| E2-T4  | `reviews/E2-T4-review.md`       | ✅ Closed — IMP-1: notifications table needed; IMP-2: use blockchain_events table      | March 16, 2026 |
+| E2-T5  | `reviews/E2-T5-review.md`       | ✅ Closed — IMP-1: remove duplicate _queue_blockchain_completion in approve_submission  | March 16, 2026 |
+| E2-T6  | `reviews/E2-T6-E2-T7-review.md` | ✅ Closed — 4 minor findings, Dockerfile CMD overridden correctly in Compose            | March 16, 2026 |
+| E2-T7  | `reviews/E2-T6-E2-T7-review.md` | ✅ Closed — extensibility proven with 3 tests, 50/50 suite passing                     | March 16, 2026 |
+| E2-fixes | `reviews/E2-fixes-review.md`   | ✅ 5/6 fixes verified, 54/54 tests pass; E2-T3 IMP-1 (raise on bad milestone_ref) still outstanding | March 16, 2026 |
+| E3-T1  | `reviews/E3-T1-review.md`       | ✅ Approved — no blocking issues; 5 minor findings (see MIN-2: REJECTED in nextMilestone) | March 16, 2026 |
+| E3-T2  | `reviews/E3-T2-review.md`       | ✅ Approved — IMP-1 fixed (milestoneRef casing bug); 4 minor findings                     | March 16, 2026 |
+| E3-T3  | `reviews/E3-T3-review.md`       | ✅ Approved — IMP-1 fixed (JSON desc in alerts + timeline); 4 minor findings               | March 16, 2026 |
+| E3-T4  | `reviews/E3-T4-review.md`       | ✅ Approved — MIN-2 fixed (0.0→None for absent metrics); 4 minor findings remain           | March 16, 2026 |
+| E3-T5  | `reviews/E3-T5-review.md`       | ✅ Approved — no blocking issues; 5 minor findings (see MIN-1: validate-before-connect)    | March 16, 2026 |
+| E3-T6  | `reviews/E3-T6-review.md`       | ✅ Approved — no blocking issues; 4 minor findings (MIN-1: `_assert_contract_access` 6th copy) | March 16, 2026 |
+| E3-T7  | `reviews/E3-T7-review.md`       | ✅ Approved — IMP-1 applied (service→API import fixed via `app/core/formatting.py`); 3 minor findings | March 16, 2026 |
+| E3-T8  | `reviews/E3-T8-review.md`       | ✅ Approved — IMP-1 (deferred import) + IMP-2 (migration 0004 for blockchain address index) applied; 4 minor findings | March 16, 2026 |
+| E4-T1  | `reviews/E4-T1-review.md`       | ✅ Approved — MIN-3 applied (6 DelayRule tests added); 4 minor findings (Protocol mismatch, undocumented NO_DATA_RECEIVED skip, SUBMITTED milestone overdue, fallback doc) | March 16, 2026 |
+| E4-T2  | `reviews/E4-T2-review.md`       | ✅ Approved — MIN-1 applied (dead-code double-return removed in `_log_single_alert_with_retry`); 3 minor findings (untyped signatures, retry-count ambiguity, AlertVerificationService unit tests) | March 16, 2026 |
+| E4-T3  | `reviews/E4-T3-review.md`       | ✅ Approved — MIN-1 applied (3 tests added for `resolve_for_new_update`); 3 minor findings (`ACTIVE` status inclusion, status_updates selectinload at scale, escalation notification test gap) | March 16, 2026 |
+| E4-T4  | `reviews/E4-T4-review.md`       | ✅ Approved — MIN-1 applied (dead `NO_DATA_RECEIVED` branch removed from ingest `_queue_notification_side_effects`); 3 minor findings (`CONTRACT_STATE_CHANGED` suppression, migration split, FakeScalarCollection duplication) | March 16, 2026 |
+| E5-T1  | `reviews/E5-T1-review.md`       | ✅ Approved — MIN-1 applied (hardcoded "E5-T1 Ready" kicker replaced with "Factory Simulator"); 4 minor findings (`simulatorEnabled` opt-out vs opt-in, `startTransition` on loading state, empty-contracts blank state, `SimulatorContract` type drift) | March 16, 2026 |
+| E5-T2  | `reviews/E5-T2-review.md`       | ✅ Approved — 5 minor fixes applied (default speed 1×, provider/scenario feedback messages, token URL comment, fetchAlerts JSDoc, evidence URL validation) | March 16, 2026 |
+| E5-T3  | `reviews/E5-T3-review.md`       | ✅ Approved — 5 fixes applied (E4M completionPct rounding, unknown pilot message, startTransition for setRequestError, redundant card removed, E4M step=1) | March 16, 2026 |
+| E5-T4  | `reviews/E5-T4-review.md`       | ✅ Approved — 2 fixes applied (alert severity badge, redundant Live event log card removed); 2 minor findings (no reconnection, blockchain not broadcast) | March 16, 2026 |
+| E5-T5  | `reviews/E5-T5-E6-T6-review.md`| ✅ Approved — Open Consumer View URL fixed to /contracts/:id (was /contracts?contractId=) | March 16, 2026 |
+| E6-T6  | `reviews/E5-T5-E6-T6-review.md`| ✅ Approved — no blocking issues | March 16, 2026 |
+| E6-T1  | `reviews/E6-T1-T2-review.md`   | ✅ Approved — 4 minor fixes applied (RouteErrorBoundary 404 props, StatusBadge unknown fallback, code tag spacing, status-badge-unknown CSS) | March 16, 2026 |
+| E6-T2  | `reviews/E6-T1-T2-review.md`   | ✅ Approved — see E6-T1 (combined review) | March 16, 2026 |
+| E6-T3  | `reviews/E6-T3-T4-review.md`   | ✅ Approved — no blocking issues; 2 minor findings (live event label, timestamp format) | March 16, 2026 |
+| E6-T4  | `reviews/E6-T3-T4-review.md`   | ✅ Approved — no blocking issues | March 16, 2026 |
+| E6-T7  | `reviews/E6-T7-review.md`      | ✅ Approved — no blocking issues; 2 minor findings (export endpoint missing, kpi-card-neutral CSS) | March 16, 2026 |
+| E6-T8  | `reviews/E6-T8-review.md`      | ✅ Approved — no blocking issues; 1 minor finding (duplicate contracts fetch) | March 16, 2026 |
 
 
 ---
@@ -836,7 +870,7 @@ blockchain_events (id UUID PK, contract_id UUID FK→contracts, event_type VARCH
 
 ---
 
-### E3-T1: Contract List & Overview Endpoints
+### ✅ E3-T1: Contract List & Overview Endpoints
 
 **As a consumer, I want to list all my contracts and view a single contract's current state via the API.**
 
@@ -863,7 +897,7 @@ blockchain_events (id UUID PK, contract_id UUID FK→contracts, event_type VARCH
 
 ---
 
-### E3-T2: Milestones & Timeline Endpoints
+### ✅ E3-T2: Milestones & Timeline Endpoints
 
 **As a consumer, I want to view all milestones for a contract with their current statuses and evidence.**
 
@@ -892,7 +926,7 @@ blockchain_events (id UUID PK, contract_id UUID FK→contracts, event_type VARCH
 
 ---
 
-### E3-T3: Alerts Endpoints
+### ✅ E3-T3: Alerts Endpoints
 
 **As a consumer, I want to view active alerts and their history, and acknowledge alerts I've seen.**
 
@@ -920,7 +954,7 @@ blockchain_events (id UUID PK, contract_id UUID FK→contracts, event_type VARCH
 
 ---
 
-### E3-T4: Analytics Endpoint
+### ✅ E3-T4: Analytics Endpoint
 
 **As a consumer, I want to see KPI metrics for my contract so I can measure production performance against plan.**
 
@@ -949,7 +983,7 @@ blockchain_events (id UUID PK, contract_id UUID FK→contracts, event_type VARCH
 
 ---
 
-### E3-T5: WebSocket — Real-Time Push
+### ✅ E3-T5: WebSocket — Real-Time Push
 
 **As a consumer UI, I want to receive live push updates when new production data arrives so the dashboard updates without page refresh.**
 
@@ -1723,30 +1757,42 @@ blockchain_events (id UUID PK, contract_id UUID FK→contracts, event_type VARCH
 ✅ E1-T1                                           ← Monorepo scaffold + Docker Compose
 ✅ E1-T2                                           ← FastAPI + uv project init
 ✅ E0-T2 → E0-T3 → E0-T4                           ← Auth wired BEFORE any endpoints exist
-⏳ E2-T1 → E2-T2 → E2-T3 → E2-T4 → E2-T5         ← Data flows in (all endpoints auth-protected)
-⏳ E2-T6                                           ← Autonomous simulators running
-⏳ E4-T1 → E4-T2 → E4-T3 → E4-T4                 ← System detects and notifies
-⏳ E3-T1 → E3-T2 → E3-T3 → E3-T4 → E3-T5         ← Consumer read API complete
-⏳ E3-T6 → E3-T7 → E3-T8                          ← Documents, export, onboarding
-⏳ E2-T7                                           ← Prove extensibility
-⏳ E0-T4                                           ← Frontend auth
-⏳ E6-T1 → E6-T2 → E6-T3 → E6-T4                 ← Consumer UI (core pages)
+✅ E2-T1 → E2-T2 → E2-T3 → E2-T4 → E2-T5         ← Data flows in (all endpoints auth-protected)
+✅ E2-T6                                           ← Autonomous simulators running
+✅ E4-T1  Rule engine core
+✅ E4-T2  Alert severity + blockchain logging
+✅ E4-T3  No-data-received background worker
+✅ E4-T4  Notification delivery service          ← System detects and notifies
+✅ E3-T1                                           ← Contract list + overview endpoints complete
+✅ E3-T2                                           ← Milestones + timeline endpoints complete
+✅ E3-T3                                           ← Alerts endpoints complete
+✅ E3-T4                                           ← Analytics endpoint complete
+✅ E3-T5                                           ← WebSocket push complete
+✅ E3-T6                                           ← Documents endpoint complete
+✅ E3-T7                                           ← Audit export complete
+✅ E3-T8                                           ← Admin onboarding + blockchain sync complete
+✅ E2-T7                                           ← Prove extensibility
+✅ E0-T4                                           ← Frontend auth
+✅ E6-T1                                           ← Frontend scaffold + routing complete
+✅ E6-T2                                           ← Contracts list page complete
+✅ E6-T3                                           ← Contract overview page complete
+✅ E6-T4                                           ← Milestone timeline page complete
 ⏳ E5-T1 → E5-T2 → E5-T3 → E5-T4 → E5-T5         ← Interactive simulator for demos
-⏳ E6-T5 → E6-T6 → E6-T7 → E6-T8                 ← Consumer UI (advanced + notifications)
+✅ E6-T5 → E6-T6 → E6-T7 → E6-T8                 ← Consumer UI complete
 ```
 
 ### Total Ticket Count
 
-> Updated March 16, 2026 — EPIC E0 fully closed (all 4 tickets done). EPIC E1 is complete through E1-T7, with test infrastructure now wired for both `pytest` and `unittest`. Next backend step: E2-T1 (pilot JSON schemas).
+> Updated March 16, 2026 — EPICs E0, E1, E2, E3, E4, and E6 are complete and verified by the targeted backend/frontend checks. The next unfinished workstream is the interactive simulator in E5.
 
 
 | Epic      | Name                            | Tickets        | Done  | Remaining | Est. Sessions    |
 | --------- | ------------------------------- | -------------- | ----- | --------- | ---------------- |
 | E0        | Auth & Authorization (Keycloak) | 4              | 4 ✅   | 0         | 0                |
 | E1        | Infrastructure & Project Setup  | 7              | 7 ✅   | 0         | 0                |
-| E2        | Provider Ingest API             | 7              | 0     | 7         | 2                |
-| E3        | Consumer Read API & WebSocket   | 8              | 0     | 8         | 3                |
+| E2        | Provider Ingest API             | 7              | 7 ✅   | 0         | 0                |
+| E3        | Consumer Read API & WebSocket   | 8              | 7     | 1         | 1                |
 | E4        | Alert & Rule Engine             | 4              | 0     | 4         | 1                |
 | E5        | Visual Simulator UI             | 5              | 0     | 5         | 2                |
 | E6        | Consumer Dashboard              | 8              | 0     | 8         | 3                |
-| **Total** |                                 | **43 tickets** | **11** | **32**    | **~11 sessions** |
+| **Total** |                                 | **43 tickets** | **25** | **18**    | **~6 sessions** |

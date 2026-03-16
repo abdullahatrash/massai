@@ -1,0 +1,38 @@
+{
+  "scenario": "factor_dispute",
+  "initialPayload": {
+    "quantityProduced": 11700,
+    "quantityPlanned": 12000,
+    "currentStage": "INSPECTION",
+    "qualityPassRate": 0.973,
+    "machineUtilization": 0.77,
+    "qualityRejectCount": 31,
+    "shiftsCompleted": 6
+  },
+  "steps": [
+    {
+      "updateType": "QUALITY_EVENT",
+      "payload": {
+        "quantityProduced": 11850,
+        "qualityPassRate": 0.89,
+        "qualityRejectCount": 49
+      }
+    },
+    {
+      "updateType": "MILESTONE_COMPLETE",
+      "payload": {
+        "milestoneRef": "INSPECTION",
+        "quantityProduced": 12000,
+        "quantityPlanned": 12000,
+        "currentStage": "INSPECTION",
+        "qualityPassRate": 0.89,
+        "machineUtilization": 0.7,
+        "qualityRejectCount": 54,
+        "shiftsCompleted": 7
+      },
+      "evidence": [
+        "https://example.com/factor/inspection-dispute"
+      ]
+    }
+  ]
+}

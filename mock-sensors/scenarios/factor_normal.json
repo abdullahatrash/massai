@@ -1,0 +1,40 @@
+{
+  "scenario": "factor_normal",
+  "initialPayload": {
+    "quantityProduced": 600,
+    "quantityPlanned": 12000,
+    "currentStage": "TURNING",
+    "qualityPassRate": 0.992,
+    "machineUtilization": 0.82,
+    "qualityRejectCount": 3,
+    "shiftsCompleted": 1
+  },
+  "steps": [
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "quantityProduced": 1200,
+        "qualityPassRate": 0.993,
+        "machineUtilization": 0.84,
+        "shiftsCompleted": 2
+      }
+    },
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "quantityProduced": 2400,
+        "qualityPassRate": 0.991,
+        "shiftsCompleted": 3
+      }
+    },
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "currentStage": "HEAT_TREATMENT",
+        "quantityProduced": 4800,
+        "qualityPassRate": 0.989,
+        "machineUtilization": 0.86
+      }
+    }
+  ]
+}

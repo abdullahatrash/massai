@@ -82,6 +82,7 @@ async def _upsert_contract(seed: ContractSeed, *, now: datetime, today: date) ->
             session.add(contract)
 
         contract.blockchain_contract_address = seed["blockchain_contract_address"]
+        contract.public_id = seed["public_id"]
         contract.pilot_type = seed["pilot_type"]
         contract.agreement_type = seed["agreement_type"]
         contract.status = seed["status"]

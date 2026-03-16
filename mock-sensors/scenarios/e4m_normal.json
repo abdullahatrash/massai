@@ -1,0 +1,38 @@
+{
+  "scenario": "e4m_normal",
+  "initialPayload": {
+    "currentPhase": "M1",
+    "completionPct": 15,
+    "approvalRequired": false,
+    "deliverables": [
+      "Architecture brief"
+    ],
+    "testResults": [],
+    "issues": []
+  },
+  "steps": [
+    {
+      "updateType": "PHASE_CHANGE",
+      "payload": {
+        "currentPhase": "M1",
+        "completionPct": 45,
+        "deliverables": [
+          "Architecture brief",
+          "Interface inventory"
+        ]
+      }
+    },
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "currentPhase": "M1",
+        "completionPct": 80,
+        "deliverables": [
+          "Architecture brief",
+          "Interface inventory",
+          "Initial backlog"
+        ]
+      }
+    }
+  ]
+}

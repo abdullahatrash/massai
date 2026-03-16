@@ -80,10 +80,6 @@
         "additionalProperties": true
       }
     },
-    "milestone_ref": {
-      "type": "string",
-      "minLength": 1
-    },
     "milestoneRef": {
       "type": "string",
       "minLength": 1

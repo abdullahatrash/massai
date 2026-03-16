@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Pilot Test Update Payload",
+  "type": "object",
+  "required": [
+    "testValue",
+    "testLabel"
+  ],
+  "properties": {
+    "testValue": {
+      "type": "integer"
+    },
+    "testLabel": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": false
+}

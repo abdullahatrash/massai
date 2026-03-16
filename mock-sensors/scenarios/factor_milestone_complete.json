@@ -1,0 +1,30 @@
+{
+  "scenario": "factor_milestone_complete",
+  "initialPayload": {
+    "quantityProduced": 11850,
+    "quantityPlanned": 12000,
+    "currentStage": "TURNING",
+    "qualityPassRate": 0.992,
+    "machineUtilization": 0.88,
+    "qualityRejectCount": 6,
+    "shiftsCompleted": 5
+  },
+  "steps": [
+    {
+      "updateType": "MILESTONE_COMPLETE",
+      "payload": {
+        "milestoneRef": "TURNING",
+        "quantityProduced": 12000,
+        "quantityPlanned": 12000,
+        "currentStage": "TURNING",
+        "qualityPassRate": 0.992,
+        "machineUtilization": 0.89,
+        "qualityRejectCount": 6,
+        "shiftsCompleted": 6
+      },
+      "evidence": [
+        "https://example.com/factor/turning-complete-report"
+      ]
+    }
+  ]
+}

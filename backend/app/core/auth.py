@@ -175,8 +175,11 @@ def _normalize_contract_ids(claims: dict[str, Any]) -> tuple[str, ...]:
 
 
 def _validate_issuer(claims: dict[str, Any], settings: Settings) -> None:
-    expected_issuer = _realm_url(settings)
-    if claims.get("iss") != expected_issuer:
+    token_issuer = claims.get("iss")
+    if not token_issuer:
+        raise _unauthorized("Token is missing issuer.")
+    allowed = set(settings.keycloak_valid_issuers)
+    if token_issuer not in allowed:
         raise _unauthorized("Invalid token issuer.")
 
 

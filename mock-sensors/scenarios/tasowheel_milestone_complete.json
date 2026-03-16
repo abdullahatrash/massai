@@ -1,0 +1,32 @@
+{
+  "scenario": "tasowheel_milestone_complete",
+  "initialPayload": {
+    "routingStep": 30,
+    "stepName": "Balancing",
+    "stepStatus": "IN_PROGRESS",
+    "setupTimeActualMin": 18,
+    "cycleTimeActualSec": 132,
+    "downtimeMinutes": 3,
+    "energyKwh": 25.1,
+    "carbonKgCo2e": 9.1
+  },
+  "steps": [
+    {
+      "updateType": "MILESTONE_COMPLETE",
+      "payload": {
+        "milestoneRef": "STEP_30",
+        "routingStep": 30,
+        "stepName": "Balancing",
+        "stepStatus": "COMPLETE",
+        "setupTimeActualMin": 18,
+        "cycleTimeActualSec": 129,
+        "downtimeMinutes": 3,
+        "energyKwh": 26.0,
+        "carbonKgCo2e": 9.3
+      },
+      "evidence": [
+        "https://example.com/tasowheel/balancing-complete"
+      ]
+    }
+  ]
+}

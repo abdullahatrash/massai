@@ -64,11 +64,13 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://massai:massai@postgres:5432/massai_monitoring}
       ENVIRONMENT: ${ENVIRONMENT:-development}
       BLOCKCHAIN_ADAPTER: ${BLOCKCHAIN_ADAPTER:-mock}
-      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["http://localhost:3000","http://127.0.0.1:3000"]}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
       KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
+      KEYCLOAK_VALID_ISSUERS: http://keycloak:${KEYCLOAK_PORT:-8080}/realms/${KEYCLOAK_REALM:-massai},http://localhost:${KEYCLOAK_PORT:-8080}/realms/${KEYCLOAK_REALM:-massai}
     volumes:
       - ./backend:/app
+      - backend-venv:/app/.venv
     ports:
       - "${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -93,8 +95,13 @@ services:
       - -lc
       - pnpm install && pnpm run dev -- --host 0.0.0.0 --port ${PORT:-3000}
     environment:
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080
       PORT: ${FRONTEND_PORT:-3000}
       VITE_API_BASE_URL: http://localhost:${BACKEND_PORT:-8000}
+      VITE_ENABLE_SIMULATOR: ${VITE_ENABLE_SIMULATOR:-true}
+      VITE_PROVIDER_E4M_CLIENT_SECRET: ${PROVIDER_E4M_CLIENT_SECRET:-provider-e4m-sa-secret}
+      VITE_PROVIDER_FACTOR_CLIENT_SECRET: ${PROVIDER_FACTOR_CLIENT_SECRET:-provider-factor-sa-secret}
+      VITE_PROVIDER_TASOWHEEL_CLIENT_SECRET: ${PROVIDER_TASOWHEEL_CLIENT_SECRET:-provider-tasowheel-sa-secret}
       VITE_KEYCLOAK_CLIENT_ID: massai-frontend
       VITE_KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
       VITE_KEYCLOAK_URL: http://localhost:${KEYCLOAK_PORT:-8080}
@@ -122,7 +129,9 @@ services:
       API_URL: ${API_URL:-http://backend:8000}
       CONTRACT_ID: contract-factor-001
       SIMULATOR_NAME: factor
+      SCENARIO: ${FACTOR_SCENARIO:-normal}
       INTERVAL_SECONDS: ${SIMULATOR_INTERVAL_SECONDS:-15}
+      STOP_AFTER_STEPS: ${SIMULATOR_STOP_AFTER_STEPS:-}
       KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
       KEYCLOAK_CLIENT_ID: provider-factor-sa
@@ -143,7 +152,9 @@ services:
       API_URL: ${API_URL:-http://backend:8000}
       CONTRACT_ID: contract-tasowheel-001
       SIMULATOR_NAME: tasowheel
+      SCENARIO: ${TASOWHEEL_SCENARIO:-normal}
       INTERVAL_SECONDS: ${SIMULATOR_INTERVAL_SECONDS:-15}
+      STOP_AFTER_STEPS: ${SIMULATOR_STOP_AFTER_STEPS:-}
       KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
       KEYCLOAK_CLIENT_ID: provider-tasowheel-sa
@@ -164,7 +175,9 @@ services:
       API_URL: ${API_URL:-http://backend:8000}
       CONTRACT_ID: contract-e4m-001
       SIMULATOR_NAME: e4m
+      SCENARIO: ${E4M_SCENARIO:-normal}
       INTERVAL_SECONDS: ${SIMULATOR_INTERVAL_SECONDS:-15}
+      STOP_AFTER_STEPS: ${SIMULATOR_STOP_AFTER_STEPS:-}
       KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
       KEYCLOAK_CLIENT_ID: provider-e4m-sa
@@ -178,3 +191,4 @@ services:
 volumes:
   postgres-data:
   frontend-node-modules:
+  backend-venv:

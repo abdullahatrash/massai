@@ -1,0 +1,37 @@
+{
+  "scenario": "factor_delay",
+  "initialPayload": {
+    "quantityProduced": 400,
+    "quantityPlanned": 12000,
+    "currentStage": "TURNING",
+    "qualityPassRate": 0.988,
+    "machineUtilization": 0.64,
+    "qualityRejectCount": 8,
+    "shiftsCompleted": 1
+  },
+  "steps": [
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "quantityProduced": 650,
+        "machineUtilization": 0.58
+      }
+    },
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "quantityProduced": 900,
+        "machineUtilization": 0.55,
+        "qualityRejectCount": 14
+      }
+    },
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "quantityProduced": 1100,
+        "machineUtilization": 0.51,
+        "qualityPassRate": 0.981
+      }
+    }
+  ]
+}

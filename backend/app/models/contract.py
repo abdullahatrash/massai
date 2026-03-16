@@ -13,6 +13,7 @@ from app.models.base import Base, UUIDPrimaryKeyMixin
 class Contract(UUIDPrimaryKeyMixin, Base):
     __tablename__ = "contracts"
 
+    public_id: Mapped[str | None] = mapped_column(String, index=True, unique=True)
     blockchain_contract_address: Mapped[str | None] = mapped_column(String)
     pilot_type: Mapped[str | None] = mapped_column(String)
     agreement_type: Mapped[str | None] = mapped_column(String)
@@ -35,3 +36,4 @@ class Contract(UUIDPrimaryKeyMixin, Base):
     blockchain_events: Mapped[list["BlockchainEvent"]] = relationship(
         back_populates="contract"
     )
+    notifications: Mapped[list["Notification"]] = relationship(back_populates="contract")

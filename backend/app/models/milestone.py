@@ -37,3 +37,4 @@ class Milestone(UUIDPrimaryKeyMixin, Base):
     )
 
     contract: Mapped["Contract"] = relationship(back_populates="milestones")
+    notifications: Mapped[list["Notification"]] = relationship(back_populates="milestone")

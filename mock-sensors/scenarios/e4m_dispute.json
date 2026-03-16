@@ -1,0 +1,45 @@
+{
+  "scenario": "e4m_dispute",
+  "initialPayload": {
+    "currentPhase": "M5",
+    "completionPct": 98,
+    "approvalRequired": true,
+    "deliverables": [
+      "Pilot readiness bundle"
+    ],
+    "testResults": [
+      {
+        "testName": "Factory acceptance",
+        "result": "PASS",
+        "defects": 0
+      }
+    ],
+    "issues": []
+  },
+  "steps": [
+    {
+      "updateType": "MILESTONE_COMPLETE",
+      "payload": {
+        "milestoneRef": "M5",
+        "currentPhase": "M5",
+        "completionPct": 100,
+        "approvalRequired": true,
+        "deliverables": [
+          "Pilot readiness bundle",
+          "Consumer review notes"
+        ],
+        "testResults": [
+          {
+            "testName": "Factory acceptance",
+            "result": "PASS",
+            "defects": 0
+          }
+        ],
+        "issues": []
+      },
+      "evidence": [
+        "https://example.com/e4m/m5-review-bundle"
+      ]
+    }
+  ]
+}

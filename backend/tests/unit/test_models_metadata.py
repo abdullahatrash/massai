@@ -17,6 +17,7 @@ class ModelMetadataTestCase(unittest.TestCase):
                 "blockchain_events",
                 "contracts",
                 "milestones",
+                "notifications",
                 "status_updates",
             },
         )

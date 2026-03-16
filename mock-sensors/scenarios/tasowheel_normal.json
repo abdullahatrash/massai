@@ -1,0 +1,34 @@
+{
+  "scenario": "tasowheel_normal",
+  "initialPayload": {
+    "routingStep": 10,
+    "stepName": "Blank Preparation",
+    "stepStatus": "IN_PROGRESS",
+    "setupTimeActualMin": 40,
+    "cycleTimeActualSec": 152,
+    "downtimeMinutes": 4,
+    "energyKwh": 18.2,
+    "carbonKgCo2e": 7.4
+  },
+  "steps": [
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "stepStatus": "COMPLETE",
+        "downtimeMinutes": 5,
+        "energyKwh": 19.1
+      }
+    },
+    {
+      "updateType": "PRODUCTION_UPDATE",
+      "payload": {
+        "routingStep": 20,
+        "stepName": "CNC Machining",
+        "stepStatus": "IN_PROGRESS",
+        "setupTimeActualMin": 28,
+        "cycleTimeActualSec": 141,
+        "energyKwh": 23.7
+      }
+    }
+  ]
+}

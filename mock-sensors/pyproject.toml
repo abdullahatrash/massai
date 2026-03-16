@@ -1,0 +1,9 @@
+[project]
+name = "massai-mock-sensors"
+version = "0.1.0"
+description = "Autonomous background simulators for MaaSAI pilot ingest flows."
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.uv]
+package = false
