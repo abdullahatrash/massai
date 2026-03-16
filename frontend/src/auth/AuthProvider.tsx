@@ -10,9 +10,15 @@ import {
 import keycloak from "./keycloak";
 import { setAccessTokenProvider } from "../api/client";
 
-// Module-level flag: persists across React StrictMode's mount→unmount→remount cycle.
-// keycloak-js throws if init() is called more than once on the same instance.
+// Module-level: persists across React StrictMode's mount→unmount→remount cycle.
+//
+// keycloakInitStarted prevents calling init() twice (keycloak-js throws on second call).
+// keycloakRawInitPromise lets the StrictMode second-mount re-subscribe to the same
+// in-progress promise instead of calling syncFromKeycloak() eagerly (which would read
+// keycloak.authenticated === undefined and mark isReady:true before auth resolves,
+// causing ProtectedRoute to fire login() prematurely and start an infinite redirect loop).
 let keycloakInitStarted = false;
+let keycloakRawInitPromise: Promise<boolean> | null = null;
 
 type AuthUser = {
   email: string | null;
@@ -114,28 +120,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     keycloak.onAuthLogout = syncFromKeycloak;
     keycloak.onAuthRefreshSuccess = syncFromKeycloak;
     keycloak.onAuthRefreshError = () => {
-      void keycloak.login({ redirectUri: window.location.href });
+      void keycloak.login({ redirectUri: `${window.location.origin}${window.location.pathname}` });
     };
     keycloak.onTokenExpired = () => {
       void keycloak.updateToken(30).catch(() => {
-        void keycloak.login({ redirectUri: window.location.href });
+        void keycloak.login({ redirectUri: `${window.location.origin}${window.location.pathname}` });
       });
     };
 
     if (keycloakInitStarted) {
-      // StrictMode second mount: Keycloak already initialised — just sync current state.
-      syncFromKeycloak();
+      // StrictMode second mount: re-subscribe to the in-progress (or already-resolved)
+      // init promise. This avoids reading keycloak.authenticated before it is set.
+      void keycloakRawInitPromise!
+        .then(syncFromKeycloak)
+        .catch((error: unknown) => {
+          const message =
+            error instanceof Error ? error.message : "Unable to initialize Keycloak.";
+          handleFailure(message);
+        });
     } else {
       keycloakInitStarted = true;
-      void keycloak
-        .init({
-          checkLoginIframe: false,
-          onLoad: "check-sso",
-          pkceMethod: "S256",
-          silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
-        })
+      keycloakRawInitPromise = keycloak.init({
+        checkLoginIframe: false,
+        onLoad: "check-sso",
+        pkceMethod: "S256",
+        silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+      });
+      void keycloakRawInitPromise
         .then(syncFromKeycloak)
-        .catch((error) => {
+        .catch((error: unknown) => {
           const message =
             error instanceof Error ? error.message : "Unable to initialize Keycloak.";
           handleFailure(message);
@@ -167,7 +180,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async () => {
-    await keycloak.login({ redirectUri: window.location.href });
+    // Strip hash and query params so Keycloak never redirects back to a URL
+    // that already contains auth codes — which would grow the URL infinitely.
+    const cleanUri = `${window.location.origin}${window.location.pathname}`;
+    await keycloak.login({ redirectUri: cleanUri });
   };
 
   const logout = async () => {
