@@ -48,7 +48,12 @@ class ServiceAccountTokenProvider:
         with urlopen(request, timeout=5) as response:
             payload = json.loads(response.read().decode("utf-8"))
 
-        self._access_token = payload["access_token"]
+        access_token = payload.get("access_token")
+        if not access_token:
+            raise RuntimeError(
+                f"Keycloak token response missing access_token for {self._client_id}: {payload}"
+            )
+        self._access_token = access_token
         self._expires_at = now + float(payload.get("expires_in", 60))
         print(json.dumps({"event": "authenticated", "client_id": self._client_id}))
         return self._access_token
@@ -93,6 +98,9 @@ def run_simulator(default_name: str) -> None:
         except URLError as exc:
             backend_status = f"unreachable ({exc.reason})"
             backend_payload = {}
+        except Exception as exc:
+            backend_status = f"error ({type(exc).__name__})"
+            backend_payload = {"detail": str(exc)}
 
         print(
             json.dumps(

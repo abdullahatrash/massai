@@ -26,7 +26,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://massai:massai@postgres:5432/massai_monitoring}
       ENVIRONMENT: ${ENVIRONMENT:-production}
       BLOCKCHAIN_ADAPTER: ${BLOCKCHAIN_ADAPTER:-mock}
-      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-["http://localhost:3000"]}
       KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
     depends_on:
