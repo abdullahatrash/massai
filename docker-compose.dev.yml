@@ -114,6 +114,10 @@ services:
       CONTRACT_ID: contract-factor-001
       SIMULATOR_NAME: factor
       INTERVAL_SECONDS: ${SIMULATOR_INTERVAL_SECONDS:-15}
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
+      KEYCLOAK_CLIENT_ID: provider-factor-sa
+      KEYCLOAK_CLIENT_SECRET: ${PROVIDER_FACTOR_CLIENT_SECRET:-provider-factor-sa-secret}
     volumes:
       - ./mock-sensors:/app
     depends_on:
@@ -131,6 +135,10 @@ services:
       CONTRACT_ID: contract-tasowheel-001
       SIMULATOR_NAME: tasowheel
       INTERVAL_SECONDS: ${SIMULATOR_INTERVAL_SECONDS:-15}
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
+      KEYCLOAK_CLIENT_ID: provider-tasowheel-sa
+      KEYCLOAK_CLIENT_SECRET: ${PROVIDER_TASOWHEEL_CLIENT_SECRET:-provider-tasowheel-sa-secret}
     volumes:
       - ./mock-sensors:/app
     depends_on:
@@ -148,6 +156,10 @@ services:
       CONTRACT_ID: contract-e4m-001
       SIMULATOR_NAME: e4m
       INTERVAL_SECONDS: ${SIMULATOR_INTERVAL_SECONDS:-15}
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
+      KEYCLOAK_CLIENT_ID: provider-e4m-sa
+      KEYCLOAK_CLIENT_SECRET: ${PROVIDER_E4M_CLIENT_SECRET:-provider-e4m-sa-secret}
     volumes:
       - ./mock-sensors:/app
     depends_on:

@@ -24,7 +24,7 @@ MANIFEST
 venv/
 ENV/
 .uv/
-uv.lock          # keep this — it pins exact deps; remove line if you prefer to commit it
+# uv.lock is committed intentionally — it pins exact dependency versions for reproducible builds
 
 # pytest / coverage
 .pytest_cache/

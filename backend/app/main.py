@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import logging
+from contextlib import asynccontextmanager
 from time import perf_counter
+from typing import AsyncIterator
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,11 +17,25 @@ configure_logging()
 settings = get_settings()
 logger = logging.getLogger("massai.api")
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    logger.info(
+        "application_started",
+        extra={
+            "environment": settings.environment,
+            "blockchain_adapter": settings.blockchain_adapter,
+        },
+    )
+    yield
+
+
 app = FastAPI(
     title=settings.app_name,
     version=settings.api_version,
     openapi_url="/openapi.json",
     docs_url="/docs",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -61,17 +77,6 @@ async def log_requests(request: Request, call_next):
         },
     )
     return response
-
-
-@app.on_event("startup")
-async def on_startup() -> None:
-    logger.info(
-        "application_started",
-        extra={
-            "environment": settings.environment,
-            "blockchain_adapter": settings.blockchain_adapter,
-        },
-    )
 
 
 @app.get("/health", tags=["health"])

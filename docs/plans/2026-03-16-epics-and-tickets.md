@@ -54,12 +54,12 @@
 | ------ | ------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------- |
 | **E0** | **Auth & Authorization**                    |        |                                                                                                                                        |
 | E0-T1  | Keycloak Docker Setup + Realm Config        | ✅     | IMP-1 fixed (`sslRequired: none`). IMP-2 fixed (inline mappers on both clients; roles via `realm_access.roles`). Review → `reviews/E0-T1-review.md` |
-| E0-T2  | Backend JWT Validation Middleware           | 🔲     | Blocked until E1-T1 + E1-T2 done. Read roles from `realm_access.roles`; admin bypasses `contract_ids` check                            |
+| E0-T2  | Backend JWT Validation Middleware           | ✅     | Implemented early in E1-T2. `app/core/auth.py` + `app/core/dependencies.py`. Review → `reviews/E1-T1-E1-T2-review.md`                  |
 | E0-T3  | Provider Service Account Tokens             | 🔲     |                                                                                                                                        |
 | E0-T4  | Frontend Auth (Keycloak login flow)         | 🔲     |                                                                                                                                        |
 | **E1** | **Infrastructure & Project Setup**          |        |                                                                                                                                        |
-| E1-T1  | Monorepo Scaffold + Docker Compose          | 🔄     | In Progress                                                                                                                            |
-| E1-T2  | Backend Project Init (FastAPI + uv)         | ⏳      | Starts after E1-T1                                                                                                                     |
+| E1-T1  | Monorepo Scaffold + Docker Compose          | ✅     | All scaffold + Docker Compose criteria met. Review → `reviews/E1-T1-E1-T2-review.md`                                                  |
+| E1-T2  | Backend Project Init (FastAPI + uv)         | ✅     | FastAPI + uv + structured logging + lifespan handler. Review → `reviews/E1-T1-E1-T2-review.md`                                        |
 | E1-T3  | Database Schema + Migrations                | 🔲     |                                                                                                                                        |
 | E1-T4  | Database Seed Data (3 Pilot Contracts)      | 🔲     |                                                                                                                                        |
 | E1-T5  | Standardised API Response Envelope          | 🔲     |                                                                                                                                        |
@@ -112,10 +112,10 @@ The current agreed sequence (revised from original to wire auth in early):
 
 ```
 ✅ E0-T1  Keycloak realm + Docker (IMP-1 + IMP-2 fixed ✅)
-🔄 E1-T1  Monorepo scaffold + Docker Compose
-⏳ E1-T2  FastAPI + uv project init
-⏳ E0-T2  JWT middleware (auth wired BEFORE any endpoints exist)
-⏳ E0-T3  Provider service account tokens
+✅ E1-T1  Monorepo scaffold + Docker Compose
+✅ E1-T2  FastAPI + uv project init
+✅ E0-T2  JWT middleware (implemented early as part of E1-T2)
+🔄 E0-T3  Provider service account tokens
 ⏳ E1-T3  Database schema + migrations
 ⏳ E1-T4  Seed data (3 pilot contracts)
 ⏳ E1-T5  API response envelope
@@ -131,7 +131,10 @@ The current agreed sequence (revised from original to wire auth in early):
 
 | Ticket | Review File               | Verdict                           | Date           |
 | ------ | ------------------------- | --------------------------------- | -------------- |
-| E0-T1  | `reviews/E0-T1-review.md` | ✅ Closed — both fixes verified and applied | March 16, 2026 |
+| E0-T1  | `reviews/E0-T1-review.md`         | ✅ Closed — both fixes verified and applied              | March 16, 2026 |
+| E1-T1  | `reviews/E1-T1-E1-T2-review.md`  | ✅ Closed — all scaffold criteria met, 4 minor fixes applied | March 16, 2026 |
+| E1-T2  | `reviews/E1-T1-E1-T2-review.md`  | ✅ Closed — FastAPI init complete; E0-T2 delivered early    | March 16, 2026 |
+| E0-T2  | `reviews/E1-T1-E1-T2-review.md`  | ✅ Closed (early) — JWT middleware in `app/core/auth.py`    | March 16, 2026 |
 
 
 ---
@@ -1732,13 +1735,13 @@ blockchain_events (id UUID PK, contract_id UUID FK→contracts, event_type VARCH
 
 ### Total Ticket Count
 
-> Updated March 16, 2026 — E0-T1 fully closed (IMP-1 + IMP-2 fixed). E1-T1 in progress. E1-T2 up next.
+> Updated March 16, 2026 — E0-T1, E0-T2 (early), E1-T1, E1-T2 all closed. Next: E0-T3 → E1-T3.
 
 
-| Epic      | Name                            | Tickets        | Done | Remaining | Est. Sessions    |
-| --------- | ------------------------------- | -------------- | ---- | --------- | ---------------- |
-| E0        | Auth & Authorization (Keycloak) | 4              | 1 ✅ | 3         | 2                |
-| E1        | Infrastructure & Project Setup  | 7              | 0    | 7         | 2                |
+| Epic      | Name                            | Tickets        | Done  | Remaining | Est. Sessions    |
+| --------- | ------------------------------- | -------------- | ----- | --------- | ---------------- |
+| E0        | Auth & Authorization (Keycloak) | 4              | 3 ✅  | 1         | 1                |
+| E1        | Infrastructure & Project Setup  | 7              | 2 ✅  | 5         | 2                |
 | E2        | Provider Ingest API             | 7              | 0     | 7         | 2                |
 | E3        | Consumer Read API & WebSocket   | 8              | 0     | 8         | 3                |
 | E4        | Alert & Rule Engine             | 4              | 0     | 4         | 1                |

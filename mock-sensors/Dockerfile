@@ -5,6 +5,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-COPY . .
+COPY *.py ./
 
 CMD ["python", "factor_simulator.py"]
