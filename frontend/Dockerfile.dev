@@ -1,9 +1,12 @@
 FROM node:20-alpine
 
-WORKDIR /app
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 
-COPY index.html server.mjs ./
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
+WORKDIR /app
 
 EXPOSE 3000
 
-CMD ["node", "server.mjs"]
+CMD ["sh", "-lc", "pnpm install && pnpm run dev -- --host 0.0.0.0 --port ${PORT:-3000}"]

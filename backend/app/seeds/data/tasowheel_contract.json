@@ -1,0 +1,73 @@
+{
+  "public_id": "contract-tasowheel-001",
+  "pilot_type": "TASOWHEEL",
+  "agreement_type": "ROUTING_EXECUTION",
+  "status": "ACTIVE",
+  "provider_id": "provider-tasowheel@test.com",
+  "consumer_id": "consumer-ops@tasowheel.example",
+  "product_name": "Precision Wheel Hub Assemblies",
+  "quantity_total": 4800,
+  "delivery_in_days": 75,
+  "activated_days_ago": 4,
+  "blockchain_contract_address": "0x7A50000000000000000000000000000000000001",
+  "config": {
+    "public_id": "contract-tasowheel-001",
+    "pilot_label": "Tasowheel",
+    "site_name": "Larissa Routing Line",
+    "routing_family": "Wheel Hub V3",
+    "last_known_state": {
+      "routingStep": 1,
+      "stepName": "Blank Preparation",
+      "stepStatus": "IN_PROGRESS",
+      "setupTimeActualMin": 42,
+      "cycleTimeActualSec": 155,
+      "downtimeMinutes": 9
+    }
+  },
+  "milestones": [
+    {
+      "milestone_ref": "STEP_10",
+      "name": "Blank Preparation",
+      "planned_in_days": 6,
+      "status": "PENDING",
+      "approval_required": false,
+      "completion_criteria": {
+        "routingStep": 10,
+        "stepStatus": "COMPLETE"
+      }
+    },
+    {
+      "milestone_ref": "STEP_20",
+      "name": "CNC Machining",
+      "planned_in_days": 15,
+      "status": "PENDING",
+      "approval_required": false,
+      "completion_criteria": {
+        "routingStep": 20,
+        "stepStatus": "COMPLETE"
+      }
+    },
+    {
+      "milestone_ref": "STEP_30",
+      "name": "Balancing",
+      "planned_in_days": 28,
+      "status": "PENDING",
+      "approval_required": false,
+      "completion_criteria": {
+        "routingStep": 30,
+        "stepStatus": "COMPLETE"
+      }
+    },
+    {
+      "milestone_ref": "STEP_40",
+      "name": "Final Dispatch Check",
+      "planned_in_days": 40,
+      "status": "PENDING",
+      "approval_required": true,
+      "completion_criteria": {
+        "routingStep": 40,
+        "stepStatus": "COMPLETE"
+      }
+    }
+  ]
+}

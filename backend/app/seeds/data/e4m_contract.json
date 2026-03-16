@@ -1,0 +1,97 @@
+{
+  "public_id": "contract-e4m-001",
+  "pilot_type": "E4M",
+  "agreement_type": "PHASE_GATED_DELIVERY",
+  "status": "ACTIVE",
+  "provider_id": "provider-e4m@innovation.example",
+  "consumer_id": "consumer-e4m@test.com",
+  "product_name": "Energy Transition Demonstrator",
+  "quantity_total": 6,
+  "delivery_in_days": 120,
+  "activated_days_ago": 3,
+  "blockchain_contract_address": "0xE4M0000000000000000000000000000000000001",
+  "config": {
+    "public_id": "contract-e4m-001",
+    "pilot_label": "E4M",
+    "program_name": "Modular Demonstrator Release 1",
+    "current_phase": "M1",
+    "last_known_state": {
+      "currentPhase": "M1",
+      "completionPct": 12,
+      "approvalRequired": false,
+      "deliverables": [
+        "Architecture brief",
+        "Interface inventory"
+      ],
+      "issues": []
+    }
+  },
+  "milestones": [
+    {
+      "milestone_ref": "M1",
+      "name": "M1",
+      "planned_in_days": 5,
+      "status": "PENDING",
+      "approval_required": false,
+      "completion_criteria": {
+        "currentPhase": "M1",
+        "completionPct": 100
+      }
+    },
+    {
+      "milestone_ref": "M2",
+      "name": "M2",
+      "planned_in_days": 16,
+      "status": "PENDING",
+      "approval_required": true,
+      "completion_criteria": {
+        "currentPhase": "M2",
+        "completionPct": 100
+      }
+    },
+    {
+      "milestone_ref": "M3",
+      "name": "M3",
+      "planned_in_days": 30,
+      "status": "PENDING",
+      "approval_required": true,
+      "completion_criteria": {
+        "currentPhase": "M3",
+        "completionPct": 100
+      }
+    },
+    {
+      "milestone_ref": "M4",
+      "name": "M4",
+      "planned_in_days": 48,
+      "status": "PENDING",
+      "approval_required": false,
+      "completion_criteria": {
+        "currentPhase": "M4",
+        "completionPct": 100
+      }
+    },
+    {
+      "milestone_ref": "M5",
+      "name": "M5",
+      "planned_in_days": 67,
+      "status": "PENDING",
+      "approval_required": true,
+      "completion_criteria": {
+        "currentPhase": "M5",
+        "completionPct": 100
+      }
+    },
+    {
+      "milestone_ref": "M6",
+      "name": "M6",
+      "planned_in_days": 84,
+      "status": "PENDING",
+      "approval_required": true,
+      "completion_criteria": {
+        "currentPhase": "M6",
+        "completionPct": 100
+      }
+    }
+  ]
+}

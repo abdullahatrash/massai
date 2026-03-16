@@ -1,0 +1,79 @@
+{
+  "public_id": "contract-factor-001",
+  "pilot_type": "FACTOR",
+  "agreement_type": "PRODUCTION_MONITORING",
+  "status": "ACTIVE",
+  "provider_id": "provider-factor@test.com",
+  "consumer_id": "consumer-factor@test.com",
+  "product_name": "Forged Drive Shafts",
+  "quantity_total": 12000,
+  "delivery_in_days": 90,
+  "activated_days_ago": 5,
+  "blockchain_contract_address": "0xFAC7000000000000000000000000000000000001",
+  "config": {
+    "public_id": "contract-factor-001",
+    "pilot_label": "Factor",
+    "site_name": "Athens Forging Cell",
+    "quality_target": 0.985,
+    "current_stage": "TURNING",
+    "last_known_state": {
+      "quantityProduced": 1800,
+      "quantityPlanned": 12000,
+      "currentStage": "TURNING",
+      "qualityPassRate": 0.991,
+      "machineUtilization": 0.82,
+      "qualityRejectCount": 12,
+      "shiftsCompleted": 3
+    }
+  },
+  "milestones": [
+    {
+      "milestone_ref": "TURNING",
+      "name": "Turning",
+      "planned_in_days": 7,
+      "status": "PENDING",
+      "approval_required": false,
+      "completion_criteria": {
+        "updateType": "MILESTONE_COMPLETE",
+        "currentStage": "TURNING",
+        "minQualityPassRate": 0.97
+      }
+    },
+    {
+      "milestone_ref": "HEAT_TREATMENT",
+      "name": "Heat Treatment",
+      "planned_in_days": 18,
+      "status": "PENDING",
+      "approval_required": false,
+      "completion_criteria": {
+        "updateType": "MILESTONE_COMPLETE",
+        "currentStage": "HEAT_TREATMENT",
+        "minQualityPassRate": 0.98
+      }
+    },
+    {
+      "milestone_ref": "GRINDING",
+      "name": "Grinding",
+      "planned_in_days": 31,
+      "status": "PENDING",
+      "approval_required": false,
+      "completion_criteria": {
+        "updateType": "MILESTONE_COMPLETE",
+        "currentStage": "GRINDING",
+        "minQualityPassRate": 0.985
+      }
+    },
+    {
+      "milestone_ref": "INSPECTION",
+      "name": "Inspection",
+      "planned_in_days": 45,
+      "status": "PENDING",
+      "approval_required": true,
+      "completion_criteria": {
+        "updateType": "MILESTONE_COMPLETE",
+        "currentStage": "INSPECTION",
+        "minQualityPassRate": 0.99
+      }
+    }
+  ]
+}

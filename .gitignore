@@ -57,6 +57,7 @@ pnpm-debug.log*
 
 # Vite
 frontend/.vite/
+*.tsbuildinfo
 
 # ─── Environment & Secrets ────────────────────────────────────────────────────
 .env
