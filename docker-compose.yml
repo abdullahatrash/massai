@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-massai_monitoring}
+      POSTGRES_USER: ${POSTGRES_USER:-massai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-massai}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command:
+      - start
+      - --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+    volumes:
+      - ./user-service/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://massai:massai@postgres:5432/massai_monitoring}
+      ENVIRONMENT: ${ENVIRONMENT:-production}
+      BLOCKCHAIN_ADAPTER: ${BLOCKCHAIN_ADAPTER:-mock}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000}
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
+    depends_on:
+      - postgres
+      - keycloak
+
+volumes:
+  postgres-data:

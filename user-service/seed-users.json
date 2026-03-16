@@ -1,0 +1,73 @@
+[
+  {
+    "username": "consumer-factor@test.com",
+    "email": "consumer-factor@test.com",
+    "firstName": "Factor",
+    "lastName": "Consumer",
+    "password": "password",
+    "roles": [
+      "consumer"
+    ],
+    "attributes": {
+      "contract_ids": [
+        "contract-factor-001"
+      ]
+    }
+  },
+  {
+    "username": "provider-factor@test.com",
+    "email": "provider-factor@test.com",
+    "firstName": "Factor",
+    "lastName": "Provider",
+    "password": "password",
+    "roles": [
+      "provider"
+    ],
+    "attributes": {
+      "contract_ids": [
+        "contract-factor-001"
+      ]
+    }
+  },
+  {
+    "username": "consumer-e4m@test.com",
+    "email": "consumer-e4m@test.com",
+    "firstName": "E4M",
+    "lastName": "Consumer",
+    "password": "password",
+    "roles": [
+      "consumer"
+    ],
+    "attributes": {
+      "contract_ids": [
+        "contract-e4m-001"
+      ]
+    }
+  },
+  {
+    "username": "provider-tasowheel@test.com",
+    "email": "provider-tasowheel@test.com",
+    "firstName": "Tasowheel",
+    "lastName": "Provider",
+    "password": "password",
+    "roles": [
+      "provider"
+    ],
+    "attributes": {
+      "contract_ids": [
+        "contract-tasowheel-001"
+      ]
+    }
+  },
+  {
+    "username": "admin@test.com",
+    "email": "admin@test.com",
+    "firstName": "MaaSAI",
+    "lastName": "Admin",
+    "password": "password",
+    "roles": [
+      "admin"
+    ],
+    "attributes": {}
+  }
+]

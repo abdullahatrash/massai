@@ -1,0 +1,158 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: massai-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-massai_monitoring}
+      POSTGRES_USER: ${POSTGRES_USER:-massai}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-massai}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-massai} -d ${POSTGRES_DB:-massai_monitoring}"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: massai-keycloak
+    command:
+      - start-dev
+      - --import-realm
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "${KEYCLOAK_PORT:-8080}:8080"
+    volumes:
+      - ./user-service/realm-export.json:/opt/keycloak/data/import/realm-export.json:ro
+
+  keycloak-setup:
+    image: python:3.12-slim
+    container_name: massai-keycloak-setup
+    depends_on:
+      keycloak:
+        condition: service_started
+    environment:
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
+      SEED_USERS_FILE: /work/seed-users.json
+    volumes:
+      - ./user-service:/work:ro
+    working_dir: /work
+    command:
+      - sh
+      - /work/setup.sh
+    restart: "no"
+
+  backend:
+    build:
+      context: ./backend
+    container_name: massai-backend
+    working_dir: /app
+    command:
+      - sh
+      - -lc
+      - uv sync --no-dev && uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://massai:massai@postgres:5432/massai_monitoring}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      BLOCKCHAIN_ADAPTER: ${BLOCKCHAIN_ADAPTER:-mock}
+      BACKEND_CORS_ORIGINS: ${BACKEND_CORS_ORIGINS:-http://localhost:3000,http://127.0.0.1:3000}
+      KEYCLOAK_URL: ${KEYCLOAK_URL:-http://keycloak:8080}
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
+    volumes:
+      - ./backend:/app
+    ports:
+      - "${BACKEND_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: massai-frontend
+    working_dir: /app
+    environment:
+      PORT: ${FRONTEND_PORT:-3000}
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then((r) => { if (!r.ok) process.exit(1); }).catch(() => process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+  mock-factor:
+    build:
+      context: ./mock-sensors
+    container_name: massai-mock-factor
+    command: ["python", "factor_simulator.py"]
+    working_dir: /app
+    environment:
+      API_URL: ${API_URL:-http://backend:8000}
+      CONTRACT_ID: contract-factor-001
+      SIMULATOR_NAME: factor
+      INTERVAL_SECONDS: ${SIMULATOR_INTERVAL_SECONDS:-15}
+    volumes:
+      - ./mock-sensors:/app
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  mock-tasowheel:
+    build:
+      context: ./mock-sensors
+    container_name: massai-mock-tasowheel
+    command: ["python", "tasowheel_simulator.py"]
+    working_dir: /app
+    environment:
+      API_URL: ${API_URL:-http://backend:8000}
+      CONTRACT_ID: contract-tasowheel-001
+      SIMULATOR_NAME: tasowheel
+      INTERVAL_SECONDS: ${SIMULATOR_INTERVAL_SECONDS:-15}
+    volumes:
+      - ./mock-sensors:/app
+    depends_on:
+      backend:
+        condition: service_healthy
+
+  mock-e4m:
+    build:
+      context: ./mock-sensors
+    container_name: massai-mock-e4m
+    command: ["python", "e4m_simulator.py"]
+    working_dir: /app
+    environment:
+      API_URL: ${API_URL:-http://backend:8000}
+      CONTRACT_ID: contract-e4m-001
+      SIMULATOR_NAME: e4m
+      INTERVAL_SECONDS: ${SIMULATOR_INTERVAL_SECONDS:-15}
+    volumes:
+      - ./mock-sensors:/app
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
