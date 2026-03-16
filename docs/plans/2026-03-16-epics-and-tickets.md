@@ -56,14 +56,14 @@
 | E0-T1  | Keycloak Docker Setup + Realm Config        | ✅     | IMP-1 fixed (`sslRequired: none`). IMP-2 fixed (inline mappers on both clients; roles via `realm_access.roles`). Review → `reviews/E0-T1-review.md` |
 | E0-T2  | Backend JWT Validation Middleware           | ✅     | Implemented early in E1-T2. `app/core/auth.py` + `app/core/dependencies.py`. Review → `reviews/E1-T1-E1-T2-review.md`                  |
 | E0-T3  | Provider Service Account Tokens             | ✅     | 3 SA clients in realm-export + setup.sh syncs roles+contract_ids. Simulator auth + token cache done. Review → `reviews/E0-T3-review.md` |
-| E0-T4  | Frontend Auth (Keycloak login flow)         | ✅     | check-sso + PKCE, auto-refresh, ProtectedRoute, API client injection, pnpm migration. Review → `reviews/E0-T4-review.md`               |
+| E0-T4  | Frontend Auth (Keycloak login flow)         | ✅     | check-sso + PKCE, auto-refresh, ProtectedRoute, API client injection, pnpm migration. 2 runtime bugs fixed (StrictMode init loop + redirectUri poisoning). Review → `reviews/E0-T4-review.md` |
 | **E1** | **Infrastructure & Project Setup**          |        |                                                                                                                                        |
 | E1-T1  | Monorepo Scaffold + Docker Compose          | ✅     | All scaffold + Docker Compose criteria met. Review → `reviews/E1-T1-E1-T2-review.md`                                                  |
 | E1-T2  | Backend Project Init (FastAPI + uv)         | ✅     | FastAPI + uv + structured logging + lifespan handler. Review → `reviews/E1-T1-E1-T2-review.md`                                        |
 | E1-T3  | Database Schema + Migrations                | ✅     | Alembic bootstrap + initial 5-table schema verified with live upgrade/downgrade cycle                                                  |
-| E1-T4  | Database Seed Data (3 Pilot Contracts)      | 🔄     | Seed files + idempotent seeding script in progress                                                                                     |
-| E1-T5  | Standardised API Response Envelope          | 🔲     |                                                                                                                                        |
-| E1-T6  | Error Handling Strategy                     | 🔲     |                                                                                                                                        |
+| E1-T4  | Database Seed Data (3 Pilot Contracts)      | ✅     | 3 pilot contracts + 14 milestones seeded idempotently; API list verification deferred to E3-T1                                        |
+| E1-T5  | Standardised API Response Envelope          | ✅     | Success/error envelope helpers, exception handlers, and unit coverage added in backend                                                 |
+| E1-T6  | Error Handling Strategy                     | ✅     | Health/readiness routes, INVALID_JSON handling, DB 503 envelope, auth-service 503 path, and integration coverage added               |
 | E1-T7  | Test Infrastructure Setup                   | 🔲     | Needed before auth unit tests in E0-T2                                                                                                 |
 | **E2** | **Provider Ingest API**                     |        |                                                                                                                                        |
 | E2-T1  | Pilot JSON Schemas                          | 🔲     |                                                                                                                                        |
@@ -118,9 +118,9 @@ The current agreed sequence (revised from original to wire auth in early):
 ✅ E0-T3  Provider service account tokens (3 SA clients, setup.sh sync, simulator auth)
 ✅ E0-T4  Frontend Keycloak auth (check-sso, PKCE, auto-refresh, ProtectedRoute, pnpm)
 ✅ E1-T3  Database schema + migrations
-🔄 E1-T4  Seed data (3 pilot contracts)
-⏳ E1-T5  API response envelope
-⏳ E1-T6  Error handling strategy
+✅ E1-T4  Seed data (3 pilot contracts)
+✅ E1-T5  API response envelope
+✅ E1-T6  Error handling strategy
 ⏳ E1-T7  Test infrastructure (pytest config, conftest, fixtures)
    ... then E2 → E4 → E3 → E5 → E6 per original order
 ```
@@ -1723,7 +1723,7 @@ blockchain_events (id UUID PK, contract_id UUID FK→contracts, event_type VARCH
 🔄 E1-T1                                           ← Monorepo scaffold + Docker Compose
 ⏳ E1-T2                                           ← FastAPI + uv project init
 ⏳ E0-T2 → E0-T3                                   ← Auth wired BEFORE any endpoints exist
-⏳ E1-T4 → E1-T5 → E1-T6 → E1-T7                 ← Seed, envelope, errors, test infra
+⏳ E1-T7                                         ← Test infra
 ⏳ E2-T1 → E2-T2 → E2-T3 → E2-T4 → E2-T5         ← Data flows in (all endpoints auth-protected)
 ⏳ E2-T6                                           ← Autonomous simulators running
 ⏳ E4-T1 → E4-T2 → E4-T3 → E4-T4                 ← System detects and notifies
@@ -1738,7 +1738,7 @@ blockchain_events (id UUID PK, contract_id UUID FK→contracts, event_type VARCH
 
 ### Total Ticket Count
 
-> Updated March 16, 2026 — EPIC E0 fully closed (all 4 tickets done). E1-T3 complete. Next: E1-T4 (seed data).
+> Updated March 16, 2026 — EPIC E0 fully closed (all 4 tickets done). E1-T3 through E1-T6 are complete. Next backend step: E1-T7 (test infrastructure).
 
 
 | Epic      | Name                            | Tickets        | Done  | Remaining | Est. Sessions    |
