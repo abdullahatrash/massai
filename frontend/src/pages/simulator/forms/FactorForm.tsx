@@ -1,3 +1,15 @@
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { FormField } from "./FormField";
+
 type FactorFormValues = {
   currentStage: string;
   machineUtilization: string;
@@ -15,42 +27,29 @@ type FactorFormProps = {
   values: FactorFormValues;
 };
 
-function FieldError({ message }: { message?: string }) {
-  if (!message) {
-    return null;
-  }
-
-  return <span className="simulator-field-error">{message}</span>;
-}
-
 export function FactorForm({ errors, onChange, values }: FactorFormProps) {
   return (
-    <div className="simulator-form-grid">
-      <label className="simulator-field">
-        <span>Quantity produced</span>
-        <input
+    <div className="grid gap-4 md:grid-cols-2">
+      <FormField error={errors.quantityProduced} label="Quantity produced">
+        <Input
           min="0"
           onChange={(event) => onChange({ quantityProduced: event.target.value })}
           type="number"
           value={values.quantityProduced}
         />
-        <FieldError message={errors.quantityProduced} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Quantity planned</span>
-        <input
+      <FormField error={errors.quantityPlanned} label="Quantity planned">
+        <Input
           min="0"
           onChange={(event) => onChange({ quantityPlanned: event.target.value })}
           type="number"
           value={values.quantityPlanned}
         />
-        <FieldError message={errors.quantityPlanned} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Quality pass rate</span>
-        <input
+      <FormField error={errors.qualityPassRate} label="Quality pass rate">
+        <Input
           max="1"
           min="0"
           onChange={(event) => onChange({ qualityPassRate: event.target.value })}
@@ -58,26 +57,29 @@ export function FactorForm({ errors, onChange, values }: FactorFormProps) {
           type="number"
           value={values.qualityPassRate}
         />
-        <FieldError message={errors.qualityPassRate} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Current stage</span>
-        <select
-          onChange={(event) => onChange({ currentStage: event.target.value })}
-          value={values.currentStage}
+      <FormField error={errors.currentStage} label="Current stage">
+        <Select
+          onValueChange={(value) => onChange({ currentStage: value ?? "" })}
+          value={values.currentStage || undefined}
         >
-          <option value="TURNING">TURNING</option>
-          <option value="HEAT_TREATMENT">HEAT_TREATMENT</option>
-          <option value="GRINDING">GRINDING</option>
-          <option value="INSPECTION">INSPECTION</option>
-        </select>
-        <FieldError message={errors.currentStage} />
-      </label>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select a stage" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="TURNING">TURNING</SelectItem>
+              <SelectItem value="HEAT_TREATMENT">HEAT_TREATMENT</SelectItem>
+              <SelectItem value="GRINDING">GRINDING</SelectItem>
+              <SelectItem value="INSPECTION">INSPECTION</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Machine utilization</span>
-        <input
+      <FormField error={errors.machineUtilization} label="Machine utilization">
+        <Input
           max="1"
           min="0"
           onChange={(event) => onChange({ machineUtilization: event.target.value })}
@@ -85,41 +87,34 @@ export function FactorForm({ errors, onChange, values }: FactorFormProps) {
           type="number"
           value={values.machineUtilization}
         />
-        <FieldError message={errors.machineUtilization} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Reject count</span>
-        <input
+      <FormField error={errors.qualityRejectCount} label="Reject count">
+        <Input
           min="0"
           onChange={(event) => onChange({ qualityRejectCount: event.target.value })}
           type="number"
           value={values.qualityRejectCount}
         />
-        <FieldError message={errors.qualityRejectCount} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Shifts completed</span>
-        <input
+      <FormField error={errors.shiftsCompleted} label="Shifts completed">
+        <Input
           min="0"
           onChange={(event) => onChange({ shiftsCompleted: event.target.value })}
           type="number"
           value={values.shiftsCompleted}
         />
-        <FieldError message={errors.shiftsCompleted} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Milestone ref</span>
-        <input
+      <FormField error={errors.milestoneRef} label="Milestone ref">
+        <Input
           onChange={(event) => onChange({ milestoneRef: event.target.value })}
           placeholder="Optional, e.g. TURNING"
           type="text"
           value={values.milestoneRef}
         />
-        <FieldError message={errors.milestoneRef} />
-      </label>
+      </FormField>
     </div>
   );
 }

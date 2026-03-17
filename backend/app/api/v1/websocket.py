@@ -9,6 +9,7 @@ from app.core.auth import CurrentUser, validate_access_token
 from app.core.connection_manager import connection_manager
 from app.core.contracts import get_contract_by_public_id
 from app.core.database import get_db_session
+from app.core.response import ApiException
 
 router = APIRouter(tags=["websocket"])
 
@@ -37,15 +38,18 @@ async def contract_updates_websocket(
             reason="You do not have permission to connect.",
         )
 
-    await connection_manager.connect(contract_id, websocket)
+    await websocket.accept()
     try:
         try:
             contract = await get_contract_by_public_id(session, contract_id)
-        except Exception:
-            await connection_manager.broadcast(
-                contract_id,
-                message_type="CONTRACT_NOT_FOUND",
-                data={"contractId": contract_id},
+        except ApiException as exc:
+            if exc.status_code != status.HTTP_404_NOT_FOUND:
+                raise
+            await websocket.send_json(
+                {
+                    "type": "CONTRACT_NOT_FOUND",
+                    "data": {"contractId": contract_id},
+                }
             )
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
@@ -54,6 +58,7 @@ async def contract_updates_websocket(
             await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
             return
 
+        await connection_manager.connect(contract_id, websocket, accept=False)
         while True:
             await websocket.receive_text()
     except WebSocketDisconnect:

@@ -5,12 +5,16 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import FastAPI
+from fastapi import FastAPI, status
 from fastapi.testclient import TestClient
 from starlette.websockets import WebSocketDisconnect
 
 from app.api.v1.ingest import router as ingest_router
-from app.api.v1.websocket import get_websocket_current_user, router as websocket_router
+from app.api.v1.websocket import (
+    contract_updates_websocket,
+    get_websocket_current_user,
+    router as websocket_router,
+)
 from app.core.auth import CurrentUser, get_current_user
 from app.core.connection_manager import connection_manager
 from app.core.database import get_db_session
@@ -172,3 +176,70 @@ class WebsocketApiIntegrationTestCase(unittest.TestCase):
             self.assertEqual(message["type"], "CONTRACT_NOT_FOUND")
             with self.assertRaises(WebSocketDisconnect):
                 websocket.receive_json()
+
+    def test_unauthorized_socket_is_not_registered_before_contract_access_check(self) -> None:
+        import asyncio
+
+        class DelayedSession(FakeSession):
+            def __init__(self, contract: Contract, started: asyncio.Event, release: asyncio.Event) -> None:
+                super().__init__(contract)
+                self.started = started
+                self.release = release
+
+            async def execute(self, statement: Any) -> FakeScalarResult:
+                self.started.set()
+                await self.release.wait()
+                return await super().execute(statement)
+
+        class FakeWebSocket:
+            def __init__(self) -> None:
+                self.closed_code: int | None = None
+                self.messages: list[dict[str, Any]] = []
+
+            async def accept(self) -> None:
+                return None
+
+            async def close(self, code: int | None = None) -> None:
+                self.closed_code = code
+
+            async def send_json(self, payload: dict[str, Any]) -> None:
+                self.messages.append(payload)
+
+            async def receive_text(self) -> str:
+                raise AssertionError("Unauthorized websocket should be closed before receiving messages.")
+
+        async def scenario() -> None:
+            started = asyncio.Event()
+            release = asyncio.Event()
+            session = DelayedSession(build_contract("contract-factor-001"), started, release)
+            websocket = FakeWebSocket()
+            current_user = CurrentUser(
+                id="consumer-2",
+                email="consumer-e4m@test.com",
+                preferred_username="consumer-e4m@test.com",
+                roles=("consumer",),
+                contract_ids=("contract-e4m-001",),
+            )
+
+            task = asyncio.create_task(
+                contract_updates_websocket(
+                    websocket=websocket,
+                    contract_id="contract-factor-001",
+                    current_user=current_user,
+                    session=session,
+                )
+            )
+
+            await started.wait()
+            await connection_manager.broadcast(
+                "contract-factor-001",
+                message_type="UPDATE_RECEIVED",
+                data={"contractId": "contract-factor-001"},
+            )
+            release.set()
+            await task
+
+            self.assertEqual(websocket.messages, [])
+            self.assertEqual(websocket.closed_code, status.WS_1008_POLICY_VIOLATION)
+
+        asyncio.run(scenario())

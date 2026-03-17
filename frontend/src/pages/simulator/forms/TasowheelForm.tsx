@@ -1,3 +1,15 @@
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+import { FormField } from "./FormField";
+
 type TasowheelFormValues = {
   carbonKgCo2e: string;
   cycleTimeActualSec: string;
@@ -16,120 +28,101 @@ type TasowheelFormProps = {
   values: TasowheelFormValues;
 };
 
-function FieldError({ message }: { message?: string }) {
-  if (!message) {
-    return null;
-  }
-
-  return <span className="simulator-field-error">{message}</span>;
-}
-
 export function TasowheelForm({ errors, onChange, values }: TasowheelFormProps) {
   return (
-    <div className="simulator-form-grid">
-      <label className="simulator-field">
-        <span>Routing step</span>
-        <input
+    <div className="grid gap-4 md:grid-cols-2">
+      <FormField error={errors.routingStep} label="Routing step">
+        <Input
           min="0"
           onChange={(event) => onChange({ routingStep: event.target.value })}
           type="number"
           value={values.routingStep}
         />
-        <FieldError message={errors.routingStep} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Step name</span>
-        <input
+      <FormField error={errors.stepName} label="Step name">
+        <Input
           onChange={(event) => onChange({ stepName: event.target.value })}
           type="text"
           value={values.stepName}
         />
-        <FieldError message={errors.stepName} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Step status</span>
-        <select
-          onChange={(event) => onChange({ stepStatus: event.target.value })}
-          value={values.stepStatus}
+      <FormField error={errors.stepStatus} label="Step status">
+        <Select
+          onValueChange={(value) => onChange({ stepStatus: value ?? "" })}
+          value={values.stepStatus || undefined}
         >
-          <option value="IN_PROGRESS">IN_PROGRESS</option>
-          <option value="COMPLETE">COMPLETE</option>
-        </select>
-        <FieldError message={errors.stepStatus} />
-      </label>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select step status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
+              <SelectItem value="IN_PROGRESS">IN_PROGRESS</SelectItem>
+              <SelectItem value="COMPLETE">COMPLETE</SelectItem>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Downtime minutes</span>
-        <input
+      <FormField error={errors.downtimeMinutes} label="Downtime minutes">
+        <Input
           min="0"
           onChange={(event) => onChange({ downtimeMinutes: event.target.value })}
           step="0.1"
           type="number"
           value={values.downtimeMinutes}
         />
-        <FieldError message={errors.downtimeMinutes} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Energy kWh</span>
-        <input
+      <FormField error={errors.energyKwh} label="Energy kWh">
+        <Input
           min="0"
           onChange={(event) => onChange({ energyKwh: event.target.value })}
           step="0.1"
           type="number"
           value={values.energyKwh}
         />
-        <FieldError message={errors.energyKwh} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Setup time actual (min)</span>
-        <input
+      <FormField error={errors.setupTimeActualMin} label="Setup time actual (min)">
+        <Input
           min="0"
           onChange={(event) => onChange({ setupTimeActualMin: event.target.value })}
           step="0.1"
           type="number"
           value={values.setupTimeActualMin}
         />
-        <FieldError message={errors.setupTimeActualMin} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Cycle time actual (sec)</span>
-        <input
+      <FormField error={errors.cycleTimeActualSec} label="Cycle time actual (sec)">
+        <Input
           min="0"
           onChange={(event) => onChange({ cycleTimeActualSec: event.target.value })}
           step="0.1"
           type="number"
           value={values.cycleTimeActualSec}
         />
-        <FieldError message={errors.cycleTimeActualSec} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Carbon kgCO2e</span>
-        <input
+      <FormField error={errors.carbonKgCo2e} label="Carbon kgCO2e">
+        <Input
           min="0"
           onChange={(event) => onChange({ carbonKgCo2e: event.target.value })}
           step="0.1"
           type="number"
           value={values.carbonKgCo2e}
         />
-        <FieldError message={errors.carbonKgCo2e} />
-      </label>
+      </FormField>
 
-      <label className="simulator-field">
-        <span>Milestone ref</span>
-        <input
+      <FormField error={errors.milestoneRef} label="Milestone ref">
+        <Input
           onChange={(event) => onChange({ milestoneRef: event.target.value })}
           placeholder="Optional, e.g. STEP_20"
           type="text"
           value={values.milestoneRef}
         />
-        <FieldError message={errors.milestoneRef} />
-      </label>
+      </FormField>
     </div>
   );
 }

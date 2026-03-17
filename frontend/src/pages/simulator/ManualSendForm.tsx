@@ -1,4 +1,24 @@
 import { startTransition, useEffect, useState } from "react";
+import { ArrowUpRight, Send, Sparkles } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 import { apiRequest, ApiError } from "../../api/client";
 import {
@@ -14,7 +34,7 @@ import {
 import { E4mForm } from "./forms/E4mForm";
 import { FactorForm } from "./forms/FactorForm";
 import { TasowheelForm } from "./forms/TasowheelForm";
-import type { SimulatorContract } from "./simulatorShared";
+import { getPilotMeta, getPilotTheme, type SimulatorContract } from "./simulatorShared";
 
 type ManualSendFormProps = {
   contract: SimulatorContract;
@@ -491,42 +511,59 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
     }
   };
 
+  const pilotKey = (contract.pilotType ?? "").toUpperCase();
+  const pilotMeta = getPilotMeta(contract.pilotType);
+  const pilotTheme = getPilotTheme(contract.pilotType);
+
   return (
-    <section className="manual-send-grid">
-      <article className="simulator-module-card">
-        <div className="scenario-controls-header">
-          <div>
-            <span className="simulator-section-kicker">Manual Send</span>
-            <h3>Pilot-specific update form</h3>
+    <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <Card className="border-white/10 bg-white/[0.045] text-white shadow-[0_24px_90px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
+        <CardHeader className="border-b border-white/8 pb-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge className={pilotTheme.badgeClassName}>Manual send</Badge>
+                <Badge className="border-white/12 bg-white/8 text-white/70">{pilotMeta.label}</Badge>
+              </div>
+              <CardTitle className="mt-4 text-2xl text-white">Pilot-specific update form</CardTitle>
+              <CardDescription className="mt-3 max-w-2xl text-slate-300">
+                Prefilled from the last known state and ready to submit a single ingest update with
+                this pilot&apos;s provider service account.
+              </CardDescription>
+            </div>
+
+            <div className="w-full max-w-sm rounded-[28px] border border-white/10 bg-slate-950/45 p-4">
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                Update routing
+              </p>
+              <Select
+                onValueChange={(value) => setUpdateType(value as UpdateType)}
+                value={updateType}
+              >
+                <SelectTrigger className="mt-4 w-full border-white/12 bg-white/[0.04] text-white">
+                  <SelectValue placeholder="Select update type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="PRODUCTION_UPDATE">PRODUCTION_UPDATE</SelectItem>
+                    <SelectItem value="QUALITY_EVENT">QUALITY_EVENT</SelectItem>
+                    <SelectItem value="PHASE_CHANGE">PHASE_CHANGE</SelectItem>
+                    <SelectItem value="MILESTONE_COMPLETE">MILESTONE_COMPLETE</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </div>
+        </CardHeader>
 
-        <p className="scenario-summary">
-          This form is prefilled from the contract&apos;s last known state and submits a single ingest
-          update with the provider service account for this pilot.
-        </p>
+        <CardContent className="grid gap-5 pt-5">
+          {isLoading ? (
+            <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4 text-sm text-slate-300">
+              Pulling the latest contract overview to prefill the manual form.
+            </div>
+          ) : null}
 
-        <label className="simulator-field simulator-field-wide">
-          <span>Update type</span>
-          <select
-            onChange={(event) => setUpdateType(event.target.value as UpdateType)}
-            value={updateType}
-          >
-            <option value="PRODUCTION_UPDATE">PRODUCTION_UPDATE</option>
-            <option value="QUALITY_EVENT">QUALITY_EVENT</option>
-            <option value="PHASE_CHANGE">PHASE_CHANGE</option>
-            <option value="MILESTONE_COMPLETE">MILESTONE_COMPLETE</option>
-          </select>
-        </label>
-
-        {isLoading ? (
-          <div className="simulator-state-card">
-            <h4>Loading last known state</h4>
-            <p>Pulling the latest contract overview to prefill the manual form.</p>
-          </div>
-        ) : null}
-
-        {!isLoading && (contract.pilotType ?? "").toUpperCase() === "FACTOR" ? (
+          {!isLoading && pilotKey === "FACTOR" ? (
           <FactorForm
             errors={errors}
             onChange={(patch) =>
@@ -536,7 +573,7 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
           />
         ) : null}
 
-        {!isLoading && (contract.pilotType ?? "").toUpperCase() === "TASOWHEEL" ? (
+          {!isLoading && pilotKey === "TASOWHEEL" ? (
           <TasowheelForm
             errors={errors}
             onChange={(patch) =>
@@ -549,18 +586,17 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
           />
         ) : null}
 
-        {!isLoading &&
-        !["FACTOR", "TASOWHEEL", "E4M"].includes((contract.pilotType ?? "").toUpperCase()) ? (
-          <div className="simulator-state-card simulator-state-card-error" role="alert">
-            <h4>No form available</h4>
-            <p>
+          {!isLoading && !["FACTOR", "TASOWHEEL", "E4M"].includes(pilotKey) ? (
+            <div className="rounded-[28px] border border-rose-300/15 bg-rose-950/25 p-4 text-sm text-rose-100" role="alert">
+              <p className="text-base font-semibold text-white">No form available</p>
+              <p className="mt-2 leading-7">
               No manual send form exists for pilot type &quot;{contract.pilotType ?? "unknown"}&quot;.
               Supported pilots: FACTOR, TASOWHEEL, E4M.
-            </p>
-          </div>
-        ) : null}
+              </p>
+            </div>
+          ) : null}
 
-        {!isLoading && (contract.pilotType ?? "").toUpperCase() === "E4M" ? (
+          {!isLoading && pilotKey === "E4M" ? (
           <E4mForm
             errors={errors}
             onAddTestResult={() =>
@@ -595,65 +631,102 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
           />
         ) : null}
 
-        {(errors.pilotType || requestError) ? (
-          <p className="simulator-request-error" role="alert">
-            {errors.pilotType || requestError}
-          </p>
-        ) : null}
+          {errors.pilotType || requestError ? (
+            <div className="rounded-[28px] border border-rose-300/15 bg-rose-950/25 p-4 text-sm text-rose-100" role="alert">
+              {errors.pilotType || requestError}
+            </div>
+          ) : null}
 
-        <div className="scenario-action-row">
-          <button
-            className="primary-button"
-            disabled={
-              isLoading ||
-              isSubmitting ||
-              !["FACTOR", "TASOWHEEL", "E4M"].includes((contract.pilotType ?? "").toUpperCase())
-            }
-            onClick={() => void handleSubmit()}
-            type="button"
-          >
-            {isSubmitting ? "Sending..." : "Submit update"}
-          </button>
-        </div>
-      </article>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={isLoading || isSubmitting || !["FACTOR", "TASOWHEEL", "E4M"].includes(pilotKey)}
+              onClick={() => void handleSubmit()}
+              type="button"
+            >
+              <Send data-icon="inline-start" />
+              {isSubmitting ? "Sending..." : "Submit update"}
+            </Button>
+            <Button
+              onClick={() =>
+                window.open(
+                  `${window.location.origin}/contracts/${encodeURIComponent(contract.id)}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                )
+              }
+              type="button"
+              variant="outline"
+            >
+              <ArrowUpRight data-icon="inline-start" />
+              Open consumer view
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
-      <article className="simulator-module-card">
-        <div className="scenario-controls-header">
-          <div>
-            <span className="simulator-section-kicker">Response</span>
-            <h3>Submit result</h3>
-          </div>
-        </div>
+      <Card className="border-white/10 bg-white/[0.045] text-white shadow-[0_24px_90px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
+        <CardHeader className="border-b border-white/8 pb-4">
+          <Badge className="border-white/12 bg-white/8 text-white/70">Response</Badge>
+          <CardTitle className="text-2xl text-white">Submit result</CardTitle>
+          <CardDescription className="text-slate-300">
+            Inspect the response envelope, triggered alerts, and milestone changes for the last
+            manual update.
+          </CardDescription>
+        </CardHeader>
 
-        {responsePanel ? (
-          <div className="simulator-response-panel">
-            <dl className="simulator-response-grid">
-              <div>
-                <dt>HTTP status</dt>
-                <dd>{responsePanel.httpStatus}</dd>
+        <CardContent className="pt-5">
+          {responsePanel ? (
+            <div className="grid gap-4">
+              <div className="grid gap-3 md:grid-cols-3">
+                <div className="rounded-[24px] border border-white/10 bg-slate-950/45 p-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    HTTP status
+                  </p>
+                  <p className="mt-3 text-2xl font-semibold text-white">{responsePanel.httpStatus}</p>
+                </div>
+                <div className="rounded-[24px] border border-white/10 bg-slate-950/45 p-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Alerts triggered
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-slate-200">
+                    {responsePanel.alertsTriggered.length > 0
+                      ? responsePanel.alertsTriggered.join(", ")
+                      : "[]"}
+                  </p>
+                </div>
+                <div className="rounded-[24px] border border-white/10 bg-slate-950/45 p-4">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                    Milestone updated
+                  </p>
+                  <p className="mt-3 text-sm leading-7 text-slate-200">
+                    {responsePanel.milestoneUpdated ?? "None"}
+                  </p>
+                </div>
               </div>
-              <div>
-                <dt>alertsTriggered</dt>
-                <dd>
-                  {responsePanel.alertsTriggered.length > 0
-                    ? responsePanel.alertsTriggered.join(", ")
-                    : "[]"}
-                </dd>
+
+              <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4">
+                <div className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  <Sparkles className="text-slate-500" />
+                  Raw response
+                </div>
+                <ScrollArea className="mt-4 h-[28rem] pr-3">
+                  <pre className="overflow-x-auto rounded-[22px] border border-white/10 bg-black/30 p-4 text-xs text-slate-200">
+                    {JSON.stringify(responsePanel.response, null, 2)}
+                  </pre>
+                </ScrollArea>
               </div>
-              <div>
-                <dt>milestoneUpdated</dt>
-                <dd>{responsePanel.milestoneUpdated ?? "None"}</dd>
-              </div>
-            </dl>
-            <pre>{JSON.stringify(responsePanel.response, null, 2)}</pre>
-          </div>
-        ) : (
-          <div className="simulator-state-card">
-            <h4>No response yet</h4>
-            <p>Submit a manual update to inspect the response envelope, alerts, and milestone changes.</p>
-          </div>
-        )}
-      </article>
+            </div>
+          ) : (
+            <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4">
+              <p className="text-base font-semibold text-white">No response yet</p>
+              <p className="mt-2 text-sm leading-7 text-slate-300">
+                Submit a manual update to inspect the response envelope, alerts, and milestone
+                changes.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </section>
   );
 }

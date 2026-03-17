@@ -1,4 +1,15 @@
 import { startTransition, useEffect, useState } from "react";
+import { ArrowUpRight, Milestone, ShieldCheck } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 import { apiRequest, ApiError } from "../../api/client";
 import {
@@ -95,6 +106,22 @@ function canSubmitMilestone(milestone: SimulatorMilestoneSummary, submittingId: 
 
 function formatMilestoneStatus(status: string | null) {
   return (status ?? "UNKNOWN").split("_").join(" ");
+}
+
+function getStatusBadgeClassName(status: string | null) {
+  const normalizedStatus = (status ?? "").toUpperCase();
+
+  if (normalizedStatus === "COMPLETED" || normalizedStatus === "APPROVED") {
+    return "border-emerald-300/25 bg-emerald-300/12 text-emerald-50";
+  }
+  if (normalizedStatus === "SUBMITTED") {
+    return "border-amber-300/25 bg-amber-300/12 text-amber-50";
+  }
+  if (normalizedStatus === "REJECTED") {
+    return "border-rose-300/25 bg-rose-300/12 text-rose-100";
+  }
+
+  return "border-white/12 bg-white/8 text-white/75";
 }
 
 export function MilestoneTriggerPanel({
@@ -215,15 +242,18 @@ export function MilestoneTriggerPanel({
   };
 
   return (
-    <section className="milestone-trigger-panel">
-      <article className="simulator-module-card">
-        <div className="scenario-controls-header">
+    <Card className="border-white/10 bg-white/[0.045] text-white shadow-[0_24px_90px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
+      <CardHeader className="border-b border-white/8 pb-4">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <span className="simulator-section-kicker">Milestones</span>
-            <h3>Milestone trigger panel</h3>
+            <Badge className="border-white/12 bg-white/8 text-white/70">Milestones</Badge>
+            <CardTitle className="mt-4 text-2xl text-white">Milestone trigger panel</CardTitle>
+            <CardDescription className="mt-3 max-w-2xl text-slate-300">
+              Submit milestone completion updates directly from the simulator to test
+              auto-verification and consumer approval flows.
+            </CardDescription>
           </div>
-          <button
-            className="ghost-button simulator-button"
+          <Button
             onClick={() =>
               window.open(
                 `${window.location.origin}/contracts/${encodeURIComponent(contract.id)}`,
@@ -232,75 +262,87 @@ export function MilestoneTriggerPanel({
               )
             }
             type="button"
+            variant="outline"
           >
-            Open Consumer View
-          </button>
+            <ArrowUpRight data-icon="inline-start" />
+            Open consumer view
+          </Button>
         </div>
+      </CardHeader>
 
-        <p className="scenario-summary">
-          Submit milestone completion updates directly from the simulator to test auto-verification
-          and approval-required flows.
-        </p>
-
+      <CardContent className="grid gap-4 pt-5">
         {isLoading ? (
-          <div className="simulator-state-card">
-            <h4>Loading milestones</h4>
-            <p>Pulling the latest milestone state for this contract.</p>
+          <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4 text-sm text-slate-300">
+            Pulling the latest milestone state for this contract.
           </div>
         ) : null}
 
-        {requestError ? <p className="simulator-request-error">{requestError}</p> : null}
+        {requestError ? (
+          <div className="rounded-[28px] border border-rose-300/15 bg-rose-950/25 p-4 text-sm text-rose-100">
+            {requestError}
+          </div>
+        ) : null}
 
-        <div className="milestone-list">
+        <div className="grid gap-4">
           {milestones.map((milestone) => {
             const normalizedStatus = (milestone.status ?? "").toUpperCase();
             const isSubmittable = canSubmitMilestone(milestone, submittingId);
 
             return (
-              <article className="milestone-card" key={milestone.id}>
-                <div className="milestone-card-header">
-                  <div>
-                    <strong>{milestone.name ?? milestone.milestoneRef ?? milestone.id}</strong>
-                    <p>{milestone.milestoneRef ?? "No milestone ref"}</p>
+              <div
+                className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4"
+                key={milestone.id}
+              >
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Milestone className="text-slate-500" />
+                      <p className="text-base font-semibold text-white">
+                        {milestone.name ?? milestone.milestoneRef ?? milestone.id}
+                      </p>
+                    </div>
+                    <p className="text-sm text-slate-300">
+                      {milestone.milestoneRef ?? "No milestone ref"}
+                    </p>
                   </div>
-                  <span className={`milestone-status-pill ${normalizedStatus.toLowerCase()}`}>
+
+                  <Badge className={getStatusBadgeClassName(milestone.status)}>
                     {formatMilestoneStatus(milestone.status)}
-                  </span>
+                  </Badge>
                 </div>
 
-                <div className="milestone-meta-row">
-                  <span>
+                <div className="mt-4 flex flex-wrap items-center gap-3 text-sm text-slate-300">
+                  <div className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5">
                     Approval: {milestone.approvalRequired ? "Required" : "Auto-verified"}
-                  </span>
+                  </div>
                   {milestone.approvalRequired ? (
-                    <span
-                      className="milestone-hint"
-                      title="Consumer approval required after submission"
-                    >
+                    <div className="flex items-center gap-2 rounded-full border border-amber-300/15 bg-amber-300/10 px-3 py-1.5 text-amber-50">
+                      <ShieldCheck className="text-amber-200" />
                       Consumer approval required after submission
-                    </span>
+                    </div>
                   ) : null}
                 </div>
 
-                <button
-                  className="primary-button"
-                  disabled={!isSubmittable}
-                  onClick={() => void handleSubmit(milestone)}
-                  type="button"
-                >
-                  {submittingId === milestone.id
-                    ? "Submitting..."
-                    : normalizedStatus === "SUBMITTED"
-                      ? "Awaiting Approval"
-                      : normalizedStatus === "COMPLETED"
-                        ? "Completed"
-                        : "Submit Complete"}
-                </button>
-              </article>
+                <div className="mt-4">
+                  <Button
+                    disabled={!isSubmittable}
+                    onClick={() => void handleSubmit(milestone)}
+                    type="button"
+                  >
+                    {submittingId === milestone.id
+                      ? "Submitting..."
+                      : normalizedStatus === "SUBMITTED"
+                        ? "Awaiting approval"
+                        : normalizedStatus === "COMPLETED"
+                          ? "Completed"
+                          : "Submit complete"}
+                  </Button>
+                </div>
+              </div>
             );
           })}
         </div>
-      </article>
-    </section>
+      </CardContent>
+    </Card>
   );
 }

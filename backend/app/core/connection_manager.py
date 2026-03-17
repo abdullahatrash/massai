@@ -14,8 +14,9 @@ class ConnectionManager:
         self._connections: dict[str, set[WebSocket]] = defaultdict(set)
         self._lock = asyncio.Lock()
 
-    async def connect(self, contract_id: str, websocket: WebSocket) -> None:
-        await websocket.accept()
+    async def connect(self, contract_id: str, websocket: WebSocket, *, accept: bool = True) -> None:
+        if accept:
+            await websocket.accept()
         async with self._lock:
             self._connections[contract_id].add(websocket)
 

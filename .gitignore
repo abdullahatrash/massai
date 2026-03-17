@@ -53,6 +53,7 @@ frontend/.next/
 frontend/out/
 
 # pnpm
+.pnpm-store/
 pnpm-debug.log*
 
 # Vite
@@ -109,3 +110,6 @@ user-service/keycloak-data/
 .cache/
 tmp/
 temp/
+
+# ─── Git worktrees ────────────────────────────────────────────────────────────
+.worktrees/

@@ -1,4 +1,18 @@
 import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { Gauge, Play, Square, TimerReset } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Slider } from "@/components/ui/slider";
+import { cn } from "@/lib/utils";
 
 import type { SimulatorContract } from "./simulatorShared";
 import {
@@ -73,6 +87,31 @@ function summarizeStepResult(result: ScenarioStepResult) {
       : "No new alerts detected.";
 
   return `Step ${result.currentStep}/${result.totalSteps} completed. ${result.step.title}. ${alertSummary}`;
+}
+
+function getStatusBadgeClassName(status: RunnerStatus) {
+  if (status === "completed") {
+    return "border-emerald-300/25 bg-emerald-300/12 text-emerald-50";
+  }
+  if (status === "error" || status === "stopped") {
+    return "border-rose-300/25 bg-rose-300/12 text-rose-100";
+  }
+  if (status === "running") {
+    return "border-cyan-300/25 bg-cyan-300/12 text-cyan-50";
+  }
+
+  return "border-white/12 bg-white/8 text-white/75";
+}
+
+function getLogToneClassName(level: ScenarioLogEntry["level"]) {
+  if (level === "success") {
+    return "border-emerald-300/18 bg-emerald-400/[0.06]";
+  }
+  if (level === "error") {
+    return "border-rose-300/18 bg-rose-400/[0.06]";
+  }
+
+  return "border-white/10 bg-white/[0.03]";
 }
 
 export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerProps) {
@@ -209,134 +248,168 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
   };
 
   return (
-    <section className="scenario-runner-grid">
-      <article className="simulator-module-card scenario-controls-card">
-        <div className="scenario-controls-header">
-          <div>
-            <span className="simulator-section-kicker">Scenarios</span>
-            <h3>Automated playback</h3>
+    <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
+      <Card className="border-white/10 bg-white/[0.045] text-white shadow-[0_24px_90px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
+        <CardHeader className="border-b border-white/8 pb-4">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <Badge className="border-white/12 bg-white/8 text-white/70">Scenarios</Badge>
+              <CardTitle className="mt-4 text-2xl text-white">Automated playback</CardTitle>
+              <CardDescription className="mt-3 max-w-2xl text-slate-300">
+                Select a pilot scenario, tune playback speed, and stream the scripted steps into
+                ingest using the configured provider service account.
+              </CardDescription>
+            </div>
+            <Badge className={getStatusBadgeClassName(status)}>{status}</Badge>
           </div>
-          <span className={`scenario-status-pill ${status}`}>{status}</span>
-        </div>
+        </CardHeader>
 
-        <p className="scenario-summary">
-          Select a prebuilt pilot scenario, choose a playback speed, and push updates into ingest
-          with the provider service account for this contract.
-        </p>
+        <CardContent className="grid gap-5 pt-5">
+          {!providerClient && contract.pilotType ? (
+            <div className="rounded-[28px] border border-rose-300/15 bg-rose-950/25 p-4 text-sm text-rose-100">
+              No provider service account is configured for pilot type "{contract.pilotType}".
+            </div>
+          ) : null}
 
-        {!providerClient && contract.pilotType ? (
-          <div className="simulator-state-card simulator-state-card-error" role="alert">
-            <h4>No provider configured</h4>
-            <p>
-              No provider service account is configured for pilot type &quot;{contract.pilotType}&quot;.
-              Add credentials for this pilot in your environment.
-            </p>
-          </div>
-        ) : null}
-
-        <div className="scenario-choice-grid" role="radiogroup" aria-label="Scenario choices">
-          {scenarios.length === 0 ? (
-            <div className="simulator-state-card" role="status">
-              <h4>No scenarios available</h4>
-              <p>
+          <div className="grid gap-3">
+            {scenarios.length === 0 ? (
+              <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4 text-sm text-slate-300">
                 {contract.pilotType
                   ? `No prebuilt scenarios exist for pilot type "${contract.pilotType}".`
                   : "No pilot type is set for this contract."}
-              </p>
-            </div>
-          ) : (
-            scenarios.map((scenario) => (
-              <button
-                className={
-                  scenario.id === selectedScenarioId
-                    ? "scenario-choice-card active"
-                    : "scenario-choice-card"
-                }
-                key={scenario.id}
-                onClick={() => setSelectedScenarioId(scenario.id)}
-                type="button"
-              >
-                <strong>{scenario.name}</strong>
-                <span>{scenario.summary}</span>
-                <span>{scenario.steps.length} steps</span>
-              </button>
-            ))
-          )}
-        </div>
-
-        {selectedScenario ? (
-          <div className="scenario-meta-card">
-            <h4>Playback status</h4>
-            <p>{progressText}</p>
-            <p>{currentStepLabel}</p>
-          </div>
-        ) : null}
-
-        <div className="scenario-speed-card">
-          <div className="scenario-speed-labels">
-            <span>Playback speed</span>
-            <strong>{speedMultiplier}x</strong>
-          </div>
-          <input
-            aria-label="Playback speed"
-            max={SPEED_OPTIONS.length - 1}
-            min={0}
-            onChange={(event) => setSpeedIndex(Number(event.target.value))}
-            step={1}
-            type="range"
-            value={speedIndex}
-          />
-          <div className="scenario-speed-ticks">
-            {SPEED_OPTIONS.map((speed) => (
-              <span key={speed}>{speed}x</span>
-            ))}
-          </div>
-        </div>
-
-        <div className="scenario-action-row">
-          <button
-            className="primary-button"
-            disabled={!selectedScenario || status === "running" || !providerClient}
-            onClick={() => void handleRun()}
-            type="button"
-          >
-            Run
-          </button>
-          <button
-            className="ghost-button simulator-button"
-            disabled={status !== "running"}
-            onClick={handleStop}
-            type="button"
-          >
-            Stop
-          </button>
-        </div>
-      </article>
-
-      <article className="simulator-module-card scenario-log-card">
-        <div className="scenario-controls-header">
-          <div>
-            <span className="simulator-section-kicker">Log</span>
-            <h3>Runner output</h3>
-          </div>
-        </div>
-        <div className="scenario-log-list">
-          {logs.length === 0 ? (
-            <div className="scenario-log-entry">
-              <strong>No playback yet</strong>
-              <p>Run a scenario to capture payloads, responses, and alert changes here.</p>
-            </div>
-          ) : (
-            logs.map((entry) => (
-              <div className={`scenario-log-entry ${entry.level}`} key={entry.id}>
-                <strong>{entry.message}</strong>
-                {entry.payload ? <pre>{prettyJson(entry.payload)}</pre> : null}
-                {entry.response ? <pre>{prettyJson(entry.response)}</pre> : null}
               </div>
-            ))
-          )}
-        </div>
-      </article>
+            ) : (
+              scenarios.map((scenario) => (
+                <button
+                  className={cn(
+                    "rounded-[28px] border border-white/10 bg-slate-950/45 p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-white/18 hover:bg-white/[0.08]",
+                    scenario.id === selectedScenarioId ? "border-white/18 bg-white/[0.11]" : null,
+                  )}
+                  key={scenario.id}
+                  onClick={() => setSelectedScenarioId(scenario.id)}
+                  type="button"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-base font-semibold text-white">{scenario.name}</p>
+                    <Badge className="border-white/12 bg-white/8 text-white/70">
+                      {scenario.steps.length} steps
+                    </Badge>
+                  </div>
+                  <p className="mt-3 text-sm leading-7 text-slate-300">{scenario.summary}</p>
+                </button>
+              ))
+            )}
+          </div>
+
+          {selectedScenario ? (
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+                <div className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  <TimerReset className="text-slate-500" />
+                  Playback status
+                </div>
+                <p className="mt-4 text-base font-semibold text-white">{progressText}</p>
+                <p className="mt-2 text-sm leading-7 text-slate-300">{currentStepLabel}</p>
+              </div>
+
+              <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
+                <div className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+                  <Gauge className="text-slate-500" />
+                  Playback speed
+                </div>
+                <div className="mt-4 flex items-end justify-between gap-3">
+                  <p className="text-3xl font-semibold tracking-[-0.04em] text-white">
+                    {speedMultiplier}x
+                  </p>
+                  <p className="text-sm text-slate-300">Interval multiplier</p>
+                </div>
+                <Slider
+                  className="mt-5"
+                  max={SPEED_OPTIONS.length - 1}
+                  min={0}
+                  onValueChange={(values) =>
+                    setSpeedIndex(Array.isArray(values) ? (values[0] ?? 0) : values)
+                  }
+                  step={1}
+                  value={[speedIndex]}
+                />
+                <div className="mt-3 flex justify-between gap-2 text-xs uppercase tracking-[0.18em] text-slate-400">
+                  {SPEED_OPTIONS.map((speed) => (
+                    <span key={speed}>{speed}x</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={!selectedScenario || status === "running" || !providerClient}
+              onClick={() => void handleRun()}
+              type="button"
+            >
+              <Play data-icon="inline-start" />
+              Run scenario
+            </Button>
+            <Button
+              disabled={status !== "running"}
+              onClick={handleStop}
+              type="button"
+              variant="outline"
+            >
+              <Square data-icon="inline-start" />
+              Stop
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-white/10 bg-white/[0.045] text-white shadow-[0_24px_90px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
+        <CardHeader className="border-b border-white/8 pb-4">
+          <Badge className="border-white/12 bg-white/8 text-white/70">Log</Badge>
+          <CardTitle className="text-2xl text-white">Runner output</CardTitle>
+          <CardDescription className="text-slate-300">
+            Payloads, responses, and scenario-side alerts stream here as each playback step
+            executes.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-5">
+          <ScrollArea className="h-[35rem] pr-3">
+            <div className="grid gap-3">
+              {logs.length === 0 ? (
+                <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4">
+                  <p className="text-base font-semibold text-white">No playback yet</p>
+                  <p className="mt-2 text-sm leading-7 text-slate-300">
+                    Run a scenario to capture payloads, responses, and alert changes here.
+                  </p>
+                </div>
+              ) : (
+                logs.map((entry) => (
+                  <div
+                    className={cn(
+                      "rounded-[28px] border p-4",
+                      getLogToneClassName(entry.level),
+                    )}
+                    key={entry.id}
+                  >
+                    <p className="text-sm font-semibold text-white">{entry.message}</p>
+                    {entry.payload ? (
+                      <pre className="mt-3 overflow-x-auto rounded-[22px] border border-white/10 bg-slate-950/50 p-4 text-xs text-slate-200">
+                        {prettyJson(entry.payload)}
+                      </pre>
+                    ) : null}
+                    {entry.response ? (
+                      <pre className="mt-3 overflow-x-auto rounded-[22px] border border-white/10 bg-slate-950/50 p-4 text-xs text-slate-200">
+                        {prettyJson(entry.response)}
+                      </pre>
+                    ) : null}
+                  </div>
+                ))
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
     </section>
   );
 }
