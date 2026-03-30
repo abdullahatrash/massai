@@ -1,6 +1,7 @@
 import { startTransition } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useOutletContext } from "react-router-dom";
+import { DownloadIcon } from "lucide-react";
 
 import { getContractAnalytics, type ContractAnalytics } from "../api/analytics";
 import { useAuth } from "../auth/AuthProvider";
@@ -10,6 +11,7 @@ import { MilestoneChart } from "../components/charts/MilestoneChart";
 import { PhaseChart } from "../components/charts/PhaseChart";
 import { QualityChart } from "../components/charts/QualityChart";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { formatQualityPercent, getQualityStatus } from "@/lib/quality";
 import type { ContractOutletContext } from "./ContractRouteLayout";
 
 type KpiStatus = "amber" | "green" | "neutral" | "red";
@@ -62,7 +64,11 @@ function inverseTargetStatus(value: number | undefined, target: number): KpiStat
   return "red";
 }
 
-function buildKpis(pilotType: string | null, analytics: ContractAnalytics): KpiDefinition[] {
+function buildKpis(
+  pilotType: string | null,
+  analytics: ContractAnalytics,
+  qualityTarget?: number | null,
+): KpiDefinition[] {
   const pilot = (pilotType ?? "").toUpperCase();
   const shared: KpiDefinition[] = [
     {
@@ -87,8 +93,8 @@ function buildKpis(pilotType: string | null, analytics: ContractAnalytics): KpiD
       },
       {
         label: "Quality average",
-        status: targetStatus(analytics.qualityPassRateAvg, 98.5),
-        value: formatPercent(analytics.qualityPassRateAvg),
+        status: getQualityStatus(analytics.qualityPassRateAvg, qualityTarget),
+        value: formatQualityPercent(analytics.qualityPassRateAvg),
       },
       {
         label: "Schedule adherence",
@@ -187,27 +193,37 @@ export function Analytics() {
     }
   };
 
+  const pilotType = (contract.pilotType ?? "").toUpperCase();
+
   return (
-    <section className="page-stack">
+    <section className="page-stack" aria-label="Contract analytics">
       <div className="content-card analytics-shell">
-        <div className="analytics-header">
+        <header className="analytics-header">
           <div>
-            <span className="eyebrow">Analytics</span>
-            <h3>Contract performance against plan</h3>
+            <span className="eyebrow" aria-hidden="true">Analytics</span>
+            <h3 id="analytics-heading">Contract performance against plan</h3>
             <p className="overview-supporting-copy">
               KPI cards and charts adapt to the pilot type while staying grounded in the contract analytics service.
             </p>
           </div>
 
-          <button className="primary-button" onClick={() => void handleExport()} type="button">
-            Export analytics
+          <button
+            className="primary-button"
+            onClick={() => void handleExport()}
+            type="button"
+            aria-label="Export analytics data"
+          >
+            <DownloadIcon data-icon="inline-start" />
+            Export
           </button>
-        </div>
+        </header>
 
-        {analyticsQuery.isPending ? <p>Loading analytics and chart data.</p> : null}
+        {analyticsQuery.isPending ? (
+          <p role="status" aria-live="polite">Loading analytics and chart data.</p>
+        ) : null}
 
         {analyticsQuery.isError ? (
-          <div className="content-card error-card">
+          <div className="content-card error-card" role="alert">
             <h3>Unable to load analytics</h3>
             <p>{analyticsQuery.error.message}</p>
           </div>
@@ -215,34 +231,40 @@ export function Analytics() {
 
         {analyticsQuery.isSuccess ? (
           <>
-            <div className="kpi-grid">
-              {buildKpis(contract.pilotType, analyticsQuery.data).map((kpi) => (
+            <div
+              className="kpi-grid"
+              role="list"
+              aria-label="Key performance indicators"
+            >
+              {buildKpis(contract.pilotType, analyticsQuery.data, contract.qualityTarget).map((kpi) => (
                 <KpiCard key={kpi.label} label={kpi.label} status={kpi.status} value={kpi.value} />
               ))}
             </div>
 
-            <MilestoneChart milestones={analyticsQuery.data.milestoneSeries} />
+            <div className="analytics-charts" role="region" aria-label="Performance charts">
+              <MilestoneChart milestones={analyticsQuery.data.milestoneSeries} />
 
-            {(contract.pilotType ?? "").toUpperCase() === "FACTOR" ? (
-              <QualityChart
-                qualitySeries={analyticsQuery.data.factorQualitySeries}
-                velocitySeries={analyticsQuery.data.factorVelocitySeries}
-              />
-            ) : null}
+              {pilotType === "FACTOR" ? (
+                <QualityChart
+                  qualitySeries={analyticsQuery.data.factorQualitySeries}
+                  velocitySeries={analyticsQuery.data.factorVelocitySeries}
+                />
+              ) : null}
 
-            {(contract.pilotType ?? "").toUpperCase() === "TASOWHEEL" ? (
-              <EnergyChart
-                carbonSeries={analyticsQuery.data.tasowheelCarbonSeries}
-                energySeries={analyticsQuery.data.tasowheelEnergySeries}
-              />
-            ) : null}
+              {pilotType === "TASOWHEEL" ? (
+                <EnergyChart
+                  carbonSeries={analyticsQuery.data.tasowheelCarbonSeries}
+                  energySeries={analyticsQuery.data.tasowheelEnergySeries}
+                />
+              ) : null}
 
-            {(contract.pilotType ?? "").toUpperCase() === "E4M" ? (
-              <PhaseChart
-                phaseSeries={analyticsQuery.data.e4mPhaseSeries}
-                testBreakdown={analyticsQuery.data.e4mTestBreakdown}
-              />
-            ) : null}
+              {pilotType === "E4M" ? (
+                <PhaseChart
+                  phaseSeries={analyticsQuery.data.e4mPhaseSeries}
+                  testBreakdown={analyticsQuery.data.e4mTestBreakdown}
+                />
+              ) : null}
+            </div>
           </>
         ) : null}
       </div>

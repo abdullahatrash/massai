@@ -1,16 +1,18 @@
 import { startTransition, useEffect, useState } from "react";
-import { ArrowUpRight, Send, Sparkles } from "lucide-react";
+import { ArrowUpRight, Send } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
+import { qualityRatioToPercent } from "@/lib/quality";
+import {
+  DocumentReferenceEditor,
+  createDocumentReferenceDraft,
+  serializeDocumentReferenceDrafts,
+  type DocumentReferenceDraft,
+  type DocumentReferenceDraftErrors,
+} from "@/components/DocumentReferenceEditor";
 import {
   Select,
   SelectContent,
@@ -44,6 +46,7 @@ type ManualSendFormProps = {
 type ContractOverview = {
   id: string;
   lastKnownState: Record<string, unknown>;
+  qualityTarget?: number | null;
 };
 
 type UpdateType = "MILESTONE_COMPLETE" | "PHASE_CHANGE" | "PRODUCTION_UPDATE" | "QUALITY_EVENT";
@@ -104,6 +107,20 @@ function parseNumberString(value: unknown, fallback: string) {
   return typeof value === "number" ? String(value) : typeof value === "string" ? value : fallback;
 }
 
+function parseLocaleNumber(value: string) {
+  return Number(value.trim().replace(",", "."));
+}
+
+function formatInputPercent(value: unknown, fallback: string) {
+  const percent = qualityRatioToPercent(typeof value === "number" ? value : null);
+  if (percent === null) {
+    return fallback;
+  }
+
+  const roundedPercent = Math.round(percent * 10) / 10;
+  return Number.isInteger(roundedPercent) ? String(roundedPercent) : String(roundedPercent);
+}
+
 function createEmptyTestResult(): E4mTestResult {
   return {
     defects: "0",
@@ -118,7 +135,7 @@ function buildInitialFactorValues(lastKnownState: Record<string, unknown>): Fact
     currentStage: parseString(lastKnownState.currentStage, "TURNING"),
     machineUtilization: parseNumberString(lastKnownState.machineUtilization, "0.8"),
     milestoneRef: parseString(lastKnownState.milestoneRef),
-    qualityPassRate: parseNumberString(lastKnownState.qualityPassRate, "0.99"),
+    qualityPassRate: formatInputPercent(lastKnownState.qualityPassRate, "99"),
     qualityRejectCount: parseNumberString(lastKnownState.qualityRejectCount, "0"),
     quantityPlanned: parseNumberString(lastKnownState.quantityPlanned, "12000"),
     quantityProduced: parseNumberString(lastKnownState.quantityProduced, "0"),
@@ -218,22 +235,22 @@ function parseLineList(value: string) {
 function validateFactorForm(values: FactorFormValues) {
   const errors: Record<string, string> = {};
 
-  const quantityProduced = Number(values.quantityProduced);
+  const quantityProduced = parseLocaleNumber(values.quantityProduced);
   if (!Number.isFinite(quantityProduced) || quantityProduced < 0) {
     errors.quantityProduced = "Quantity produced must be 0 or greater.";
   }
 
-  const quantityPlanned = Number(values.quantityPlanned);
+  const quantityPlanned = parseLocaleNumber(values.quantityPlanned);
   if (!Number.isFinite(quantityPlanned) || quantityPlanned < 0) {
     errors.quantityPlanned = "Quantity planned must be 0 or greater.";
   }
 
-  const qualityPassRate = Number(values.qualityPassRate);
-  if (!Number.isFinite(qualityPassRate) || qualityPassRate < 0 || qualityPassRate > 1) {
-    errors.qualityPassRate = "Quality pass rate must stay between 0 and 1.";
+  const qualityPassRatePct = parseLocaleNumber(values.qualityPassRate);
+  if (!Number.isFinite(qualityPassRatePct) || qualityPassRatePct < 0 || qualityPassRatePct > 100) {
+    errors.qualityPassRate = "Quality pass rate must stay between 0 and 100.";
   }
 
-  const machineUtilization = Number(values.machineUtilization);
+  const machineUtilization = parseLocaleNumber(values.machineUtilization);
   if (
     values.machineUtilization &&
     (!Number.isFinite(machineUtilization) || machineUtilization < 0 || machineUtilization > 1)
@@ -251,23 +268,27 @@ function validateFactorForm(values: FactorFormValues) {
 
   return {
     errors,
-    payload: {
-      currentStage: values.currentStage,
-      ...(values.machineUtilization ? { machineUtilization } : {}),
-      ...(values.milestoneRef.trim() ? { milestoneRef: values.milestoneRef.trim() } : {}),
-      qualityPassRate,
-      ...(values.qualityRejectCount ? { qualityRejectCount: Number(values.qualityRejectCount) } : {}),
-      quantityPlanned,
-      quantityProduced,
-      ...(values.shiftsCompleted ? { shiftsCompleted: Number(values.shiftsCompleted) } : {}),
-    },
-  };
+      payload: {
+        currentStage: values.currentStage,
+        ...(values.machineUtilization ? { machineUtilization } : {}),
+        ...(values.milestoneRef.trim() ? { milestoneRef: values.milestoneRef.trim() } : {}),
+        qualityPassRate: qualityPassRatePct / 100,
+        ...(values.qualityRejectCount
+          ? { qualityRejectCount: parseLocaleNumber(values.qualityRejectCount) }
+          : {}),
+        quantityPlanned,
+        quantityProduced,
+        ...(values.shiftsCompleted
+          ? { shiftsCompleted: parseLocaleNumber(values.shiftsCompleted) }
+          : {}),
+      },
+    };
 }
 
 function validateTasowheelForm(values: TasowheelFormValues) {
   const errors: Record<string, string> = {};
 
-  const routingStep = Number(values.routingStep);
+  const routingStep = parseLocaleNumber(values.routingStep);
   if (!Number.isFinite(routingStep) || routingStep < 0) {
     errors.routingStep = "Routing step must be 0 or greater.";
   }
@@ -292,7 +313,7 @@ function validateTasowheelForm(values: TasowheelFormValues) {
       continue;
     }
 
-    const parsedValue = Number(rawValue);
+    const parsedValue = parseLocaleNumber(rawValue);
     if (!Number.isFinite(parsedValue) || parsedValue < 0) {
       errors[fieldName] = "Value must be 0 or greater.";
     }
@@ -305,13 +326,13 @@ function validateTasowheelForm(values: TasowheelFormValues) {
   return {
     errors,
     payload: {
-      ...(values.carbonKgCo2e ? { carbonKgCo2e: Number(values.carbonKgCo2e) } : {}),
-      ...(values.cycleTimeActualSec ? { cycleTimeActualSec: Number(values.cycleTimeActualSec) } : {}),
-      ...(values.downtimeMinutes ? { downtimeMinutes: Number(values.downtimeMinutes) } : {}),
-      ...(values.energyKwh ? { energyKwh: Number(values.energyKwh) } : {}),
+      ...(values.carbonKgCo2e ? { carbonKgCo2e: parseLocaleNumber(values.carbonKgCo2e) } : {}),
+      ...(values.cycleTimeActualSec ? { cycleTimeActualSec: parseLocaleNumber(values.cycleTimeActualSec) } : {}),
+      ...(values.downtimeMinutes ? { downtimeMinutes: parseLocaleNumber(values.downtimeMinutes) } : {}),
+      ...(values.energyKwh ? { energyKwh: parseLocaleNumber(values.energyKwh) } : {}),
       ...(values.milestoneRef.trim() ? { milestoneRef: values.milestoneRef.trim() } : {}),
       routingStep,
-      ...(values.setupTimeActualMin ? { setupTimeActualMin: Number(values.setupTimeActualMin) } : {}),
+      ...(values.setupTimeActualMin ? { setupTimeActualMin: parseLocaleNumber(values.setupTimeActualMin) } : {}),
       stepName: values.stepName.trim(),
       stepStatus: values.stepStatus,
     },
@@ -325,14 +346,14 @@ function validateE4mForm(values: E4mFormValues) {
     errors.currentPhase = "Current phase must be between M1 and M6.";
   }
 
-  const rawCompletion = Number(values.completionPct);
+  const rawCompletion = parseLocaleNumber(values.completionPct);
   const completionPct = Number.isFinite(rawCompletion) ? Math.round(rawCompletion) : NaN;
   if (completionPct < 0 || completionPct > 100) {
     errors.completionPct = "Completion percent must be between 0 and 100.";
   }
 
   values.testResults.forEach((result, index) => {
-    const defects = Number(result.defects);
+    const defects = parseLocaleNumber(result.defects);
     if (!Number.isFinite(defects) || defects < 0) {
       errors[`testResults.${index}`] = "Defects must be 0 or greater.";
     }
@@ -353,7 +374,7 @@ function validateE4mForm(values: E4mFormValues) {
         : {}),
       ...(values.milestoneRef.trim() ? { milestoneRef: values.milestoneRef.trim() } : {}),
       testResults: values.testResults.map((result) => ({
-        defects: Number(result.defects),
+        defects: parseLocaleNumber(result.defects),
         result: result.result,
         ...(result.testName.trim() ? { testName: result.testName.trim() } : {}),
       })),
@@ -369,6 +390,9 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [responsePanel, setResponsePanel] = useState<ResponsePanelState | null>(null);
   const [requestError, setRequestError] = useState<string | null>(null);
+  const [documentDrafts, setDocumentDrafts] = useState<DocumentReferenceDraft[]>([]);
+  const [documentDraftErrors, setDocumentDraftErrors] = useState<DocumentReferenceDraftErrors>({});
+  const [qualityTarget, setQualityTarget] = useState<number | null>(null);
 
   useEffect(() => {
     let isActive = true;
@@ -388,6 +412,9 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
 
         startTransition(() => {
           setFormValues(buildInitialFormValues(contract.pilotType, overview.lastKnownState ?? {}));
+          setQualityTarget(overview.qualityTarget ?? null);
+          setDocumentDrafts([]);
+          setDocumentDraftErrors({});
           setErrors({});
           setResponsePanel(null);
           setIsLoading(false);
@@ -416,6 +443,12 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
     };
   }, [contract.id, contract.pilotType]);
 
+  useEffect(() => {
+    if (updateType !== "MILESTONE_COMPLETE" && Object.keys(documentDraftErrors).length > 0) {
+      setDocumentDraftErrors({});
+    }
+  }, [documentDraftErrors, updateType]);
+
   const providerClient = getProviderClientConfig(contract.pilotType);
 
   const handleSubmit = async () => {
@@ -442,6 +475,17 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
       return;
     }
 
+    const serializedEvidence =
+      updateType === "MILESTONE_COMPLETE"
+        ? serializeDocumentReferenceDrafts(documentDrafts)
+        : { documents: [], errorsById: {}, hasErrors: false };
+    if (serializedEvidence.hasErrors) {
+      startTransition(() => {
+        setDocumentDraftErrors(serializedEvidence.errorsById);
+      });
+      return;
+    }
+
     if (!providerClient) {
       startTransition(() => {
         setRequestError("No provider service account is configured for this pilot.");
@@ -452,6 +496,7 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
     const controller = new AbortController();
     setIsSubmitting(true);
     setRequestError(null);
+    setDocumentDraftErrors({});
 
     try {
       const [beforeAlerts, beforeMilestones] = await Promise.all([
@@ -460,7 +505,7 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
       ]);
 
       const body = {
-        evidence: [],
+        evidence: serializedEvidence.documents,
         payload: validationResult.payload,
         sensorId: `${contract.id}-manual-send`,
         timestamp: new Date().toISOString(),
@@ -483,8 +528,11 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
       ]);
 
       startTransition(() => {
+        setDocumentDrafts([]);
+        setDocumentDraftErrors({});
         setErrors({});
         setFormValues(buildInitialFormValues(contract.pilotType, overview.lastKnownState ?? {}));
+        setQualityTarget(overview.qualityTarget ?? null);
         setResponsePanel({
           alertsTriggered: deriveAlertRules(
             afterAlerts.filter((alert) => !beforeAlerts.some((existing) => existing.id === alert.id)),
@@ -516,131 +564,147 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
   const pilotTheme = getPilotTheme(contract.pilotType);
 
   return (
-    <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-      <Card className="border-white/10 bg-white/[0.045] text-white shadow-[0_24px_90px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
-        <CardHeader className="border-b border-white/8 pb-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge className={pilotTheme.badgeClassName}>Manual send</Badge>
-                <Badge className="border-white/12 bg-white/8 text-white/70">{pilotMeta.label}</Badge>
-              </div>
-              <CardTitle className="mt-4 text-2xl text-white">Pilot-specific update form</CardTitle>
-              <CardDescription className="mt-3 max-w-2xl text-slate-300">
-                Prefilled from the last known state and ready to submit a single ingest update with
-                this pilot&apos;s provider service account.
-              </CardDescription>
-            </div>
-
-            <div className="w-full max-w-sm rounded-[28px] border border-white/10 bg-slate-950/45 p-4">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Update routing
-              </p>
-              <Select
-                onValueChange={(value) => setUpdateType(value as UpdateType)}
-                value={updateType}
-              >
-                <SelectTrigger className="mt-4 w-full border-white/12 bg-white/[0.04] text-white">
-                  <SelectValue placeholder="Select update type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="PRODUCTION_UPDATE">PRODUCTION_UPDATE</SelectItem>
-                    <SelectItem value="QUALITY_EVENT">QUALITY_EVENT</SelectItem>
-                    <SelectItem value="PHASE_CHANGE">PHASE_CHANGE</SelectItem>
-                    <SelectItem value="MILESTONE_COMPLETE">MILESTONE_COMPLETE</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </div>
+    <div className="space-y-4">
+      {/* ── Form Panel ── */}
+      <div className="sim-panel">
+        <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Badge className={cn("text-[0.58rem]", pilotTheme.badgeClassName)}>{pilotMeta.label}</Badge>
+            <h3 className="text-[0.82rem] font-semibold text-white">Manual Send</h3>
           </div>
-        </CardHeader>
+          <div className="w-48">
+            <Select
+              onValueChange={(value) => setUpdateType(value as UpdateType)}
+              value={updateType}
+            >
+              <SelectTrigger className="h-8 border-white/[0.08] bg-white/[0.03] text-[0.72rem] text-white">
+                <SelectValue placeholder="Update type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="PRODUCTION_UPDATE">PRODUCTION_UPDATE</SelectItem>
+                  <SelectItem value="QUALITY_EVENT">QUALITY_EVENT</SelectItem>
+                  <SelectItem value="PHASE_CHANGE">PHASE_CHANGE</SelectItem>
+                  <SelectItem value="MILESTONE_COMPLETE">MILESTONE_COMPLETE</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-        <CardContent className="grid gap-5 pt-5">
+        <div className="space-y-4 p-4">
           {isLoading ? (
-            <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4 text-sm text-slate-300">
-              Pulling the latest contract overview to prefill the manual form.
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-[0.72rem] text-slate-500">
+              Loading last known state...
             </div>
           ) : null}
 
           {!isLoading && pilotKey === "FACTOR" ? (
-          <FactorForm
-            errors={errors}
-            onChange={(patch) =>
-              setFormValues((currentValues) => ({ ...(currentValues as FactorFormValues), ...patch }))
-            }
-            values={formValues as FactorFormValues}
-          />
-        ) : null}
+            <FactorForm
+              errors={errors}
+              onChange={(patch) =>
+                setFormValues((currentValues) => ({ ...(currentValues as FactorFormValues), ...patch }))
+              }
+              qualityTarget={qualityTarget}
+              values={formValues as FactorFormValues}
+            />
+          ) : null}
 
           {!isLoading && pilotKey === "TASOWHEEL" ? (
-          <TasowheelForm
-            errors={errors}
-            onChange={(patch) =>
-              setFormValues((currentValues) => ({
-                ...(currentValues as TasowheelFormValues),
-                ...patch,
-              }))
-            }
-            values={formValues as TasowheelFormValues}
-          />
-        ) : null}
+            <TasowheelForm
+              errors={errors}
+              onChange={(patch) =>
+                setFormValues((currentValues) => ({
+                  ...(currentValues as TasowheelFormValues),
+                  ...patch,
+                }))
+              }
+              values={formValues as TasowheelFormValues}
+            />
+          ) : null}
 
           {!isLoading && !["FACTOR", "TASOWHEEL", "E4M"].includes(pilotKey) ? (
-            <div className="rounded-[28px] border border-rose-300/15 bg-rose-950/25 p-4 text-sm text-rose-100" role="alert">
-              <p className="text-base font-semibold text-white">No form available</p>
-              <p className="mt-2 leading-7">
-              No manual send form exists for pilot type &quot;{contract.pilotType ?? "unknown"}&quot;.
-              Supported pilots: FACTOR, TASOWHEEL, E4M.
-              </p>
+            <div className="rounded-lg border border-rose-400/15 bg-rose-400/[0.04] px-3 py-3 text-[0.72rem] text-rose-300" role="alert">
+              No manual send form for pilot type &quot;{contract.pilotType ?? "unknown"}&quot;.
+              Supported: FACTOR, TASOWHEEL, E4M.
             </div>
           ) : null}
 
           {!isLoading && pilotKey === "E4M" ? (
-          <E4mForm
-            errors={errors}
-            onAddTestResult={() =>
-              setFormValues((currentValues) => ({
-                ...(currentValues as E4mFormValues),
-                testResults: [
-                  ...(currentValues as E4mFormValues).testResults,
-                  createEmptyTestResult(),
-                ],
-              }))
-            }
-            onChange={(patch) =>
-              setFormValues((currentValues) => ({ ...(currentValues as E4mFormValues), ...patch }))
-            }
-            onRemoveTestResult={(id) =>
-              setFormValues((currentValues) => ({
-                ...(currentValues as E4mFormValues),
-                testResults: (currentValues as E4mFormValues).testResults.filter(
-                  (result) => result.id !== id,
-                ),
-              }))
-            }
-            onUpdateTestResult={(id, patch) =>
-              setFormValues((currentValues) => ({
-                ...(currentValues as E4mFormValues),
-                testResults: (currentValues as E4mFormValues).testResults.map((result) =>
-                  result.id === id ? { ...result, ...patch } : result,
-                ),
-              }))
-            }
-            values={formValues as E4mFormValues}
-          />
-        ) : null}
+            <E4mForm
+              errors={errors}
+              onAddTestResult={() =>
+                setFormValues((currentValues) => ({
+                  ...(currentValues as E4mFormValues),
+                  testResults: [
+                    ...(currentValues as E4mFormValues).testResults,
+                    createEmptyTestResult(),
+                  ],
+                }))
+              }
+              onChange={(patch) =>
+                setFormValues((currentValues) => ({ ...(currentValues as E4mFormValues), ...patch }))
+              }
+              onRemoveTestResult={(id) =>
+                setFormValues((currentValues) => ({
+                  ...(currentValues as E4mFormValues),
+                  testResults: (currentValues as E4mFormValues).testResults.filter(
+                    (result) => result.id !== id,
+                  ),
+                }))
+              }
+              onUpdateTestResult={(id, patch) =>
+                setFormValues((currentValues) => ({
+                  ...(currentValues as E4mFormValues),
+                  testResults: (currentValues as E4mFormValues).testResults.map((result) =>
+                    result.id === id ? { ...result, ...patch } : result,
+                  ),
+                }))
+              }
+              values={formValues as E4mFormValues}
+            />
+          ) : null}
+
+          {!isLoading && updateType === "MILESTONE_COMPLETE" ? (
+            <DocumentReferenceEditor
+              description="Attach hosted document URLs for this milestone-complete update."
+              errorsById={documentDraftErrors}
+              onAddRow={() =>
+                setDocumentDrafts((currentDrafts) => [
+                  ...currentDrafts,
+                  createDocumentReferenceDraft(),
+                ])
+              }
+              onChangeRow={(id, patch) => {
+                setDocumentDraftErrors({});
+                setDocumentDrafts((currentDrafts) =>
+                  currentDrafts.map((draft) =>
+                    draft.id === id ? { ...draft, ...patch } : draft,
+                  ),
+                );
+              }}
+              onRemoveRow={(id) => {
+                setDocumentDraftErrors({});
+                setDocumentDrafts((currentDrafts) =>
+                  currentDrafts.filter((draft) => draft.id !== id),
+                );
+              }}
+              rows={documentDrafts}
+              title="Evidence attachments"
+            />
+          ) : null}
 
           {errors.pilotType || requestError ? (
-            <div className="rounded-[28px] border border-rose-300/15 bg-rose-950/25 p-4 text-sm text-rose-100" role="alert">
+            <div className="rounded-lg border border-rose-400/15 bg-rose-400/[0.04] px-3 py-2 text-[0.72rem] text-rose-300" role="alert">
               {errors.pilotType || requestError}
             </div>
           ) : null}
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex gap-2">
             <Button
               disabled={isLoading || isSubmitting || !["FACTOR", "TASOWHEEL", "E4M"].includes(pilotKey)}
               onClick={() => void handleSubmit()}
+              size="sm"
               type="button"
             >
               <Send data-icon="inline-start" />
@@ -654,79 +718,69 @@ export function ManualSendForm({ contract, onSubmitSettled }: ManualSendFormProp
                   "noopener,noreferrer",
                 )
               }
+              size="sm"
               type="button"
               variant="outline"
             >
               <ArrowUpRight data-icon="inline-start" />
-              Open consumer view
+              Consumer view
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card className="border-white/10 bg-white/[0.045] text-white shadow-[0_24px_90px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
-        <CardHeader className="border-b border-white/8 pb-4">
-          <Badge className="border-white/12 bg-white/8 text-white/70">Response</Badge>
-          <CardTitle className="text-2xl text-white">Submit result</CardTitle>
-          <CardDescription className="text-slate-300">
-            Inspect the response envelope, triggered alerts, and milestone changes for the last
-            manual update.
-          </CardDescription>
-        </CardHeader>
+      {/* ── Response Panel ── */}
+      <div className="sim-panel">
+        <div className="border-b border-white/[0.06] px-4 py-3">
+          <h3 className="text-[0.82rem] font-semibold text-white">Submit Result</h3>
+        </div>
 
-        <CardContent className="pt-5">
+        <div className="p-4">
           {responsePanel ? (
-            <div className="grid gap-4">
-              <div className="grid gap-3 md:grid-cols-3">
-                <div className="rounded-[24px] border border-white/10 bg-slate-950/45 p-4">
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <div className="space-y-3">
+              <div className="grid gap-2 sm:grid-cols-3">
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                  <p className="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
                     HTTP status
                   </p>
-                  <p className="mt-3 text-2xl font-semibold text-white">{responsePanel.httpStatus}</p>
+                  <p className="mt-1.5 text-[1.1rem] font-semibold tabular-nums text-white">{responsePanel.httpStatus}</p>
                 </div>
-                <div className="rounded-[24px] border border-white/10 bg-slate-950/45 p-4">
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Alerts triggered
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                  <p className="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Alerts
                   </p>
-                  <p className="mt-3 text-sm leading-7 text-slate-200">
+                  <p className="mt-1.5 text-[0.72rem] text-slate-300">
                     {responsePanel.alertsTriggered.length > 0
                       ? responsePanel.alertsTriggered.join(", ")
-                      : "[]"}
+                      : "None"}
                   </p>
                 </div>
-                <div className="rounded-[24px] border border-white/10 bg-slate-950/45 p-4">
-                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Milestone updated
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                  <p className="text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                    Milestone
                   </p>
-                  <p className="mt-3 text-sm leading-7 text-slate-200">
+                  <p className="mt-1.5 text-[0.72rem] text-slate-300">
                     {responsePanel.milestoneUpdated ?? "None"}
                   </p>
                 </div>
               </div>
 
-              <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4">
-                <div className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                  <Sparkles className="text-slate-500" />
-                  Raw response
-                </div>
-                <ScrollArea className="mt-4 h-[28rem] pr-3">
-                  <pre className="overflow-x-auto rounded-[22px] border border-white/10 bg-black/30 p-4 text-xs text-slate-200">
-                    {JSON.stringify(responsePanel.response, null, 2)}
-                  </pre>
-                </ScrollArea>
-              </div>
+              <ScrollArea className="h-[24rem] pr-2">
+                <pre className="overflow-x-auto rounded-lg border border-white/[0.06] bg-black/20 p-3 text-[0.62rem] leading-relaxed text-slate-400">
+                  {JSON.stringify(responsePanel.response, null, 2)}
+                </pre>
+              </ScrollArea>
             </div>
           ) : (
-            <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4">
-              <p className="text-base font-semibold text-white">No response yet</p>
-              <p className="mt-2 text-sm leading-7 text-slate-300">
-                Submit a manual update to inspect the response envelope, alerts, and milestone
-                changes.
+            <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-6 text-center">
+              <p className="text-[0.78rem] font-medium text-slate-400">No response yet</p>
+              <p className="mt-1 text-[0.68rem] text-slate-600">
+                Submit an update to inspect the response envelope.
               </p>
             </div>
           )}
-        </CardContent>
-      </Card>
-    </section>
+        </div>
+      </div>
+    </div>
   );
 }

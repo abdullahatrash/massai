@@ -84,6 +84,7 @@ class MilestonesApiIntegrationTestCase(unittest.TestCase):
         self.app = build_test_app()
         self.contract = build_contract("contract-e4m-001")
         self.milestone = build_milestone(self.contract)
+        self.contract.milestones = [self.milestone]
         self.session = FakeSession(self.contract, self.milestone)
 
         async def override_current_user() -> CurrentUser:
@@ -183,3 +184,26 @@ class MilestonesApiIntegrationTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 403)
         payload = response.json()
         self.assertEqual(payload["error"]["code"], "FORBIDDEN")
+
+    def test_provider_can_list_and_view_assigned_milestones(self) -> None:
+        async def override_current_user() -> CurrentUser:
+            return CurrentUser(
+                id="provider-1",
+                email="provider-e4m@test.com",
+                preferred_username="provider-e4m@test.com",
+                roles=("provider",),
+                contract_ids=("contract-e4m-001",),
+            )
+
+        self.app.dependency_overrides[get_current_user] = override_current_user
+        client = TestClient(self.app)
+
+        list_response = client.get("/api/v1/contracts/contract-e4m-001/milestones")
+        detail_response = client.get(
+            f"/api/v1/contracts/contract-e4m-001/milestones/{self.milestone.id}"
+        )
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(detail_response.status_code, 200)
+        self.assertEqual(len(list_response.json()["data"]), 1)
+        self.assertEqual(detail_response.json()["data"]["id"], str(self.milestone.id))

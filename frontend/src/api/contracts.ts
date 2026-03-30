@@ -34,6 +34,7 @@ export type NextMilestone = {
 export type ContractOverview = ContractListItem & {
   lastKnownState: Record<string, unknown>;
   nextMilestone: NextMilestone | null;
+  qualityTarget?: number | null;
 };
 
 export type ContractsListMeta = {

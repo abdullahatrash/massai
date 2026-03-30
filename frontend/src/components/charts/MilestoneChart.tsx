@@ -2,42 +2,78 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
 import type { MilestoneAnalyticsPoint } from "../../api/analytics";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "../ui/chart";
 
 type MilestoneChartProps = {
   milestones: MilestoneAnalyticsPoint[];
 };
 
+const chartConfig = {
+  plannedDaysFromStart: {
+    label: "Planned day",
+    color: "var(--chart-5)",
+  },
+  actualDaysFromStart: {
+    label: "Actual day",
+    color: "var(--chart-2)",
+  },
+} satisfies ChartConfig;
+
 export function MilestoneChart({ milestones }: MilestoneChartProps) {
   return (
-    <section className="content-card chart-card">
-      <div className="section-header">
-        <div>
-          <span className="eyebrow">Timeline</span>
-          <h3>Milestone plan vs actual</h3>
-        </div>
-      </div>
-
-      <div className="chart-frame">
-        <ResponsiveContainer height={280} width="100%">
-          <BarChart data={milestones}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(23, 36, 38, 0.12)" />
-            <XAxis dataKey="label" tickLine={false} />
-            <YAxis allowDecimals={false} tickLine={false} />
-            <Tooltip />
-            <Legend />
-            <Bar dataKey="plannedDaysFromStart" fill="#94a3b8" name="Planned day" radius={[8, 8, 0, 0]} />
-            <Bar dataKey="actualDaysFromStart" fill="#0f766e" name="Actual day" radius={[8, 8, 0, 0]} />
+    <Card>
+      <CardHeader>
+        <CardDescription>Timeline</CardDescription>
+        <CardTitle>Milestone plan vs actual</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ChartContainer config={chartConfig} className="h-[280px] w-full">
+          <BarChart accessibilityLayer data={milestones}>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="label"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+            />
+            <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+            <ChartTooltip
+              cursor={false}
+              content={<ChartTooltipContent indicator="dashed" />}
+            />
+            <ChartLegend content={<ChartLegendContent />} />
+            <Bar
+              dataKey="plannedDaysFromStart"
+              fill="var(--color-plannedDaysFromStart)"
+              radius={4}
+            />
+            <Bar
+              dataKey="actualDaysFromStart"
+              fill="var(--color-actualDaysFromStart)"
+              radius={4}
+            />
           </BarChart>
-        </ResponsiveContainer>
-      </div>
-    </section>
+        </ChartContainer>
+      </CardContent>
+    </Card>
   );
 }

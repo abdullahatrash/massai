@@ -1,6 +1,7 @@
+import type { ProviderDocumentReference } from "./documents";
 import { apiClient, apiRequest } from "./client";
 
-export type MilestoneEvidence = Record<string, unknown> | string;
+export type MilestoneEvidence = ProviderDocumentReference | Record<string, unknown> | string;
 
 export type MilestoneSummary = {
   actualDate: string | null;
@@ -10,6 +11,7 @@ export type MilestoneSummary = {
   milestoneRef: string;
   name: string;
   plannedDate: string | null;
+  qualityGate?: number | null;
   status: string;
 };
 

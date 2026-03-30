@@ -355,3 +355,20 @@ class AnalyticsApiIntegrationTestCase(unittest.TestCase):
                 {"count": 2, "result": "PASS"},
             ],
         )
+
+    def test_provider_can_view_assigned_contract_analytics(self) -> None:
+        async def override_current_user() -> CurrentUser:
+            return CurrentUser(
+                id="provider-1",
+                email="provider@test.com",
+                preferred_username="provider@test.com",
+                roles=("provider",),
+                contract_ids=("contract-factor-001",),
+            )
+
+        self.app.dependency_overrides[get_current_user] = override_current_user
+        client = TestClient(self.app)
+        response = client.get("/api/v1/contracts/contract-factor-001/analytics")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("overallProgress", response.json()["data"])

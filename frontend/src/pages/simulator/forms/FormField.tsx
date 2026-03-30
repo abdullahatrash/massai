@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 
+import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 type FormFieldProps = {
@@ -18,19 +19,19 @@ export function FormField({
   layout = "default",
 }: FormFieldProps) {
   return (
-    <label
+    <div
       className={cn(
-        "grid gap-2",
+        "grid gap-1.5",
         layout === "wide" ? "md:col-span-2" : null,
         className,
       )}
     >
-      <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+      <Label className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-400">
         {label}
-      </span>
+      </Label>
       {children}
-      {error ? <span className="text-xs text-rose-300">{error}</span> : null}
-    </label>
+      {error ? <p className="text-[0.68rem] text-rose-400">{error}</p> : null}
+    </div>
   );
 }
 
@@ -39,5 +40,5 @@ export function FormFieldError({ message }: { message?: string }) {
     return null;
   }
 
-  return <span className="text-xs text-rose-300">{message}</span>;
+  return <p className="text-[0.68rem] text-rose-400">{message}</p>;
 }

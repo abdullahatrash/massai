@@ -35,4 +35,4 @@ class ContractListItemResponse(BaseModel):
 class ContractOverviewResponse(ContractListItemResponse):
     last_known_state: dict[str, Any] = Field(alias="lastKnownState")
     next_milestone: NextMilestoneResponse | None = Field(alias="nextMilestone")
-
+    quality_target: float | None = Field(default=None, alias="qualityTarget")

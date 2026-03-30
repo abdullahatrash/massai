@@ -39,28 +39,48 @@ export function E4mMetrics({ state }: E4mMetricsProps) {
   const testResults = asTestResults(state.testResults);
   const issues = asIssues(state.issues);
 
+  const currentPhaseIndex = currentPhase ? phases.indexOf(currentPhase) : -1;
+
   return (
-    <div className="pilot-metrics-stack">
-      <section className="content-card e4m-phase-card">
+    <div className="pilot-metrics-stack" role="region" aria-label="E4M pilot metrics">
+      <section className="content-card e4m-phase-card" aria-labelledby="e4m-phase-heading">
         <div className="section-header">
           <div>
-            <span className="eyebrow">Phase pipeline</span>
-            <h3>Programme progression</h3>
+            <span className="eyebrow" aria-hidden="true">Phase pipeline</span>
+            <h3 id="e4m-phase-heading">Programme progression</h3>
           </div>
         </div>
 
-        <div className="phase-pipeline">
-          {phases.map((phase) => (
-            <div
-              className={`phase-pill${currentPhase === phase ? " active" : ""}`}
-              key={phase}
-            >
-              {phase}
-            </div>
-          ))}
+        <div className="phase-pipeline" role="list" aria-label="Phase progression">
+          {phases.map((phase, index) => {
+            const isActive = currentPhase === phase;
+            const isCompleted = currentPhaseIndex > index;
+            let statusLabel = "Upcoming";
+            if (isActive) statusLabel = "Active";
+            if (isCompleted) statusLabel = "Completed";
+
+            return (
+              <div
+                className={`phase-pill${isActive ? " active" : ""}`}
+                key={phase}
+                role="listitem"
+                aria-current={isActive ? "step" : undefined}
+                aria-label={`${phase}: ${statusLabel}`}
+              >
+                {phase}
+              </div>
+            );
+          })}
         </div>
 
-        <div className="feed-inline-progress">
+        <div
+          className="feed-inline-progress"
+          role="progressbar"
+          aria-valuenow={completionPct !== null ? Math.round(completionPct) : undefined}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`Programme completion: ${completionPct === null ? "unavailable" : `${Math.round(completionPct)}%`}`}
+        >
           <div className="feed-inline-progress-track">
             <div
               className="feed-inline-progress-fill"
@@ -71,21 +91,21 @@ export function E4mMetrics({ state }: E4mMetricsProps) {
         </div>
       </section>
 
-      <section className="content-card e4m-table-card">
+      <section className="content-card e4m-table-card" aria-labelledby="e4m-tests-heading">
         <div className="section-header">
           <div>
-            <span className="eyebrow">Tests</span>
-            <h3>Latest results</h3>
+            <span className="eyebrow" aria-hidden="true">Tests</span>
+            <h3 id="e4m-tests-heading">Latest results</h3>
           </div>
         </div>
 
         {testResults.length > 0 ? (
-          <table className="feed-table">
+          <table className="feed-table" aria-label="Test results">
             <thead>
               <tr>
-                <th>Type</th>
-                <th>Result</th>
-                <th>Defects</th>
+                <th scope="col">Type</th>
+                <th scope="col">Result</th>
+                <th scope="col">Defects</th>
               </tr>
             </thead>
             <tbody>
@@ -103,23 +123,27 @@ export function E4mMetrics({ state }: E4mMetricsProps) {
         )}
       </section>
 
-      <section className="content-card e4m-issues-card">
+      <section className="content-card e4m-issues-card" aria-labelledby="e4m-issues-heading">
         <div className="section-header">
           <div>
-            <span className="eyebrow">Issues</span>
-            <h3>Open issue list</h3>
+            <span className="eyebrow" aria-hidden="true">Issues</span>
+            <h3 id="e4m-issues-heading">Open issue list</h3>
           </div>
         </div>
 
         {issues.length > 0 ? (
-          <div className="issue-list">
+          <div className="issue-list" role="list" aria-label={`${issues.length} open issues`}>
             {issues.map((issue, index) => (
-              <article className="issue-card" key={`${issue.title ?? "issue"}-${index}`}>
+              <article className="issue-card" key={`${issue.title ?? "issue"}-${index}`} role="listitem">
                 <strong>{issue.title ?? "Untitled issue"}</strong>
                 <p>{issue.description ?? "No description provided."}</p>
-                <div className="issue-meta">
-                  <span>{issue.severity ?? "Severity unavailable"}</span>
-                  <span>{issue.status ?? "OPEN"}</span>
+                <div className="issue-meta" aria-label="Issue details">
+                  <span aria-label={`Severity: ${issue.severity ?? "unavailable"}`}>
+                    {issue.severity ?? "Severity unavailable"}
+                  </span>
+                  <span aria-label={`Status: ${issue.status ?? "open"}`}>
+                    {issue.status ?? "OPEN"}
+                  </span>
                 </div>
               </article>
             ))}

@@ -46,13 +46,13 @@ export function E4mForm({
   values,
 }: E4mFormProps) {
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2">
       <FormField error={errors.currentPhase} label="Current phase">
         <Select
           onValueChange={(value) => onChange({ currentPhase: value ?? "" })}
           value={values.currentPhase || undefined}
         >
-          <SelectTrigger className="w-full">
+          <SelectTrigger className="w-full bg-white/[0.03]">
             <SelectValue placeholder="Select the current phase" />
           </SelectTrigger>
           <SelectContent>
@@ -70,9 +70,11 @@ export function E4mForm({
 
       <FormField error={errors.completionPct} label={`Completion (${values.completionPct}%)`}>
         <Input
+          className="bg-white/[0.03]"
           max="100"
           min="0"
           onChange={(event) => onChange({ completionPct: event.target.value })}
+          placeholder="0"
           step="1"
           type="number"
           value={values.completionPct}
@@ -83,6 +85,7 @@ export function E4mForm({
         <Button
           className="justify-start"
           onClick={() => onChange({ approvalRequired: !values.approvalRequired })}
+          size="sm"
           type="button"
           variant={values.approvalRequired ? "default" : "outline"}
         >
@@ -92,6 +95,7 @@ export function E4mForm({
 
       <FormField error={errors.milestoneRef} label="Milestone ref">
         <Input
+          className="bg-white/[0.03]"
           onChange={(event) => onChange({ milestoneRef: event.target.value })}
           placeholder="Optional, e.g. M1"
           type="text"
@@ -101,24 +105,26 @@ export function E4mForm({
 
       <FormField label="Deliverables" layout="wide">
         <Textarea
+          className="bg-white/[0.03]"
           onChange={(event) => onChange({ deliverables: event.target.value })}
           placeholder="One deliverable per line"
-          rows={5}
+          rows={4}
           value={values.deliverables}
         />
       </FormField>
 
-      <div className="grid gap-3 rounded-[28px] border border-white/10 bg-slate-950/45 p-4 md:col-span-2">
+      {/* ── Test Results ── */}
+      <div className="grid gap-3 rounded-lg border border-white/[0.06] bg-white/[0.02] p-4 sm:col-span-2">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
+            <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
               Test results
             </p>
-            <p className="mt-1 text-sm text-slate-300">
-              Capture a compact validation package for the next ingest update.
+            <p className="mt-1 text-[0.72rem] text-slate-400">
+              Validation package for the next ingest update.
             </p>
           </div>
-          <Button onClick={onAddTestResult} type="button" variant="outline">
+          <Button onClick={onAddTestResult} size="sm" type="button" variant="outline">
             Add test
           </Button>
         </div>
@@ -127,14 +133,16 @@ export function E4mForm({
         <div className="grid gap-3">
           {values.testResults.map((result, index) => (
             <div
-              className="grid gap-3 rounded-[24px] border border-white/10 bg-white/[0.03] p-4 md:grid-cols-[minmax(0,1.4fr)_180px_140px_auto]"
+              className="grid gap-3 rounded-lg border border-white/[0.06] bg-white/[0.015] p-3 md:grid-cols-[minmax(0,1.4fr)_160px_120px_auto]"
               key={result.id}
             >
               <FormField label="Test name">
                 <Input
+                  className="bg-white/[0.03]"
                   onChange={(event) =>
                     onUpdateTestResult(result.id, { testName: event.target.value })
                   }
+                  placeholder="e.g. Thermal stress"
                   type="text"
                   value={result.testName}
                 />
@@ -147,8 +155,8 @@ export function E4mForm({
                   }
                   value={result.result || undefined}
                 >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Select result" />
+                  <SelectTrigger className="w-full bg-white/[0.03]">
+                    <SelectValue placeholder="Result" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectGroup>
@@ -162,17 +170,24 @@ export function E4mForm({
 
               <FormField error={errors[`testResults.${index}`]} label="Defects">
                 <Input
+                  className="bg-white/[0.03]"
                   min="0"
                   onChange={(event) =>
                     onUpdateTestResult(result.id, { defects: event.target.value })
                   }
+                  placeholder="0"
                   type="number"
                   value={result.defects}
                 />
               </FormField>
 
               <div className="flex items-end">
-                <Button onClick={() => onRemoveTestResult(result.id)} type="button" variant="ghost">
+                <Button
+                  onClick={() => onRemoveTestResult(result.id)}
+                  size="sm"
+                  type="button"
+                  variant="ghost"
+                >
                   Remove
                 </Button>
               </div>

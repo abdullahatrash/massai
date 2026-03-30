@@ -36,6 +36,10 @@ def require_admin() -> Callable[..., CurrentUser]:
     return require_roles("admin")
 
 
+def require_contract_reader() -> Callable[..., CurrentUser]:
+    return require_roles("consumer", "provider", "admin")
+
+
 def require_contract_access(contract_id_param: str = "contract_id") -> Callable[..., CurrentUser]:
     async def dependency(
         request: Request,

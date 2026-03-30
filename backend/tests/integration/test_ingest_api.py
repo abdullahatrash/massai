@@ -199,7 +199,7 @@ class IngestApiIntegrationTestCase(unittest.TestCase):
         self.assertEqual(alert.severity, "HIGH")
         log_alerts.assert_awaited_once()
         notifications = [item for item in session.added if isinstance(item, Notification)]
-        self.assertEqual(len(notifications), 3)
+        self.assertEqual(len(notifications), 2)
 
     def test_ingest_resolves_existing_no_data_alert(self) -> None:
         contract = build_contract("contract-factor-001")
@@ -312,6 +312,52 @@ class IngestApiIntegrationTestCase(unittest.TestCase):
         self.assertEqual(notification.event_type, "MILESTONE_AWAITING_APPROVAL")
         self.assertEqual(notification.payload["milestoneRef"], "M2")
 
+    def test_ingest_milestone_complete_preserves_structured_document_evidence(self) -> None:
+        contract = build_contract("contract-e4m-001", pilot_type="E4M")
+        milestone = build_milestone(contract, "M2")
+        milestone.approval_required = True
+        milestone.completion_criteria = {"currentPhase": "M2", "completionPct": 100}
+        session = FakeSession(contract, execute_results=[contract, milestone])
+        self._set_current_user(contract_ids=("contract-e4m-001",))
+        self._set_session(session)
+
+        body = {
+            "updateType": "MILESTONE_COMPLETE",
+            "timestamp": datetime.now(UTC).isoformat(),
+            "sensorId": "sensor-e4m-01",
+            "payload": {
+                "milestoneRef": "M2",
+                "currentPhase": "M2",
+                "completionPct": 100,
+            },
+            "evidence": [
+                {
+                    "name": "phase-readiness.pdf",
+                    "url": "https://example.com/docs/phase-readiness.pdf",
+                    "format": "PDF",
+                    "uploadedAt": "2026-03-18T08:15:00Z",
+                }
+            ],
+        }
+
+        client = TestClient(self.app)
+        response = client.post("/api/v1/ingest/contract-e4m-001", json=body)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            milestone.evidence,
+            [
+                {
+                    "name": "phase-readiness.pdf",
+                    "url": "https://example.com/docs/phase-readiness.pdf",
+                    "format": "PDF",
+                    "uploadedAt": "2026-03-18T08:15:00Z",
+                }
+            ],
+        )
+        saved_update = next(item for item in session.added if isinstance(item, StatusUpdate))
+        self.assertEqual(saved_update.evidence, milestone.evidence)
+
     def test_ingest_auto_verifies_non_approval_milestone_to_completed(self) -> None:
         contract = build_contract("contract-factor-001", pilot_type="FACTOR")
         milestone = build_milestone(contract, "TURNING")
@@ -348,3 +394,28 @@ class IngestApiIntegrationTestCase(unittest.TestCase):
         )
         self.assertEqual(blockchain_event.event_type, "MILESTONE_COMPLETED")
         self.assertEqual(blockchain_event.event_data["milestoneRef"], "TURNING")
+
+    def test_ingest_rejects_invalid_structured_document_evidence(self) -> None:
+        session = FakeSession(build_contract("contract-factor-001"))
+        self._set_current_user()
+        self._set_session(session)
+
+        invalid_body = {
+            **self.valid_body,
+            "evidence": [
+                {
+                    "name": "  ",
+                    "url": "not-a-url",
+                }
+            ],
+        }
+
+        client = TestClient(self.app)
+        response = client.post("/api/v1/ingest/contract-factor-001", json=invalid_body)
+
+        self.assertEqual(response.status_code, 422)
+        payload = response.json()
+        self.assertEqual(payload["error"]["code"], "VALIDATION_ERROR")
+        fields = {detail["field"] for detail in payload["error"]["details"]}
+        self.assertTrue(any(field.endswith(".name") for field in fields))
+        self.assertTrue(any(field.endswith(".url") for field in fields))

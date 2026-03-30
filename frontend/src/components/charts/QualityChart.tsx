@@ -2,16 +2,28 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
-  ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
 import type { FactorQualityPoint, FactorVelocityPoint } from "../../api/analytics";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "../ui/chart";
 
 type QualityChartProps = {
   qualitySeries: FactorQualityPoint[];
@@ -25,6 +37,20 @@ function chartLabel(timestamp: string): string {
   });
 }
 
+const qualityConfig = {
+  qualityPassRatePct: {
+    label: "Quality %",
+    color: "var(--chart-2)",
+  },
+} satisfies ChartConfig;
+
+const velocityConfig = {
+  quantityDelta: {
+    label: "Qty per update",
+    color: "var(--chart-3)",
+  },
+} satisfies ChartConfig;
+
 export function QualityChart({ qualitySeries, velocitySeries }: QualityChartProps) {
   const qualityData = qualitySeries.map((point) => ({
     ...point,
@@ -37,47 +63,74 @@ export function QualityChart({ qualitySeries, velocitySeries }: QualityChartProp
 
   return (
     <div className="chart-stack">
-      <section className="content-card chart-card">
-        <div className="section-header">
-          <div>
-            <span className="eyebrow">Quality</span>
-            <h3>Quality pass rate over time</h3>
-          </div>
-        </div>
-        <div className="chart-frame">
-          <ResponsiveContainer height={260} width="100%">
-            <LineChart data={qualityData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(23, 36, 38, 0.12)" />
-              <XAxis dataKey="label" tickLine={false} />
-              <YAxis domain={[0, 100]} tickFormatter={(value) => `${value}%`} tickLine={false} />
-              <Tooltip />
-              <Legend />
-              <Line dataKey="qualityPassRatePct" name="Quality %" stroke="#0f766e" strokeWidth={3} type="monotone" />
+      <Card>
+        <CardHeader>
+          <CardDescription>Quality</CardDescription>
+          <CardTitle>Quality pass rate over time</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer config={qualityConfig} className="h-[260px] w-full">
+            <LineChart accessibilityLayer data={qualityData} margin={{ left: 12, right: 12 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+              />
+              <YAxis
+                domain={[0, 100]}
+                tickFormatter={(value) => `${value}%`}
+                tickLine={false}
+                axisLine={false}
+              />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="line" />}
+              />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Line
+                dataKey="qualityPassRatePct"
+                type="monotone"
+                stroke="var(--color-qualityPassRatePct)"
+                strokeWidth={2}
+                dot={false}
+              />
             </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
+          </ChartContainer>
+        </CardContent>
+      </Card>
 
-      <section className="content-card chart-card">
-        <div className="section-header">
-          <div>
-            <span className="eyebrow">Velocity</span>
-            <h3>Production velocity</h3>
-          </div>
-        </div>
-        <div className="chart-frame">
-          <ResponsiveContainer height={260} width="100%">
-            <BarChart data={velocityData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(23, 36, 38, 0.12)" />
-              <XAxis dataKey="label" tickLine={false} />
-              <YAxis tickLine={false} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="quantityDelta" fill="#14532d" name="Qty per update" radius={[8, 8, 0, 0]} />
+      <Card>
+        <CardHeader>
+          <CardDescription>Velocity</CardDescription>
+          <CardTitle>Production velocity</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer config={velocityConfig} className="h-[260px] w-full">
+            <BarChart accessibilityLayer data={velocityData}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+              />
+              <YAxis tickLine={false} axisLine={false} />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dashed" />}
+              />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar
+                dataKey="quantityDelta"
+                fill="var(--color-quantityDelta)"
+                radius={4}
+              />
             </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
+          </ChartContainer>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -120,6 +120,13 @@ function updateStateFromSocket(
   };
 }
 
+const CONNECTION_LABELS: Record<string, string> = {
+  connected: "Live data stream connected",
+  connecting: "Connecting to live data stream",
+  disconnected: "Live data stream disconnected",
+  error: "Live data stream error",
+};
+
 export function ProductionFeed() {
   const { contract } = useOutletContext<ContractOutletContext>();
   const queryClient = useQueryClient();
@@ -224,53 +231,71 @@ export function ProductionFeed() {
   const pilotType = (contract.pilotType ?? "").toUpperCase();
 
   return (
-    <section className="page-stack">
+    <section className="page-stack" aria-label="Production feed">
       <div className="content-card feed-shell">
-        <div className="feed-header">
+        <header className="feed-header">
           <div>
-            <span className="eyebrow">Production feed</span>
-            <h3>Live production metrics</h3>
+            <span className="eyebrow" aria-hidden="true">Production feed</span>
+            <h3 id="feed-heading">Live production metrics</h3>
             <p className="overview-supporting-copy">
               Real-time contract telemetry for {contract.productName ?? contract.id}.
             </p>
           </div>
 
-          <div className="feed-header-meta">
-            <span className={`connection-pill ${status}`}>Live {status}</span>
-            <span className="feed-last-updated">Last updated: {formatTimestamp(lastUpdatedAt)}</span>
+          <div className="feed-header-meta" role="status" aria-live="polite" aria-atomic="true">
+            <span
+              className={`connection-pill ${status}`}
+              aria-label={CONNECTION_LABELS[status] ?? `Live ${status}`}
+            >
+              Live {status}
+            </span>
+            <span className="feed-last-updated">
+              <span className="sr-only">Last updated: </span>
+              {formatTimestamp(lastUpdatedAt)}
+            </span>
           </div>
-        </div>
+        </header>
 
-        {isDelayed ? <div className="feed-warning-banner">{formatDelayMessage(lastUpdatedAt)}</div> : null}
+        {isDelayed ? (
+          <div className="feed-warning-banner" role="alert">
+            {formatDelayMessage(lastUpdatedAt)}
+          </div>
+        ) : null}
 
         {analyticsQuery.isPending || milestonesQuery.isPending ? (
-          <p>Preparing the live production view.</p>
+          <p role="status" aria-live="polite">Preparing the live production view.</p>
         ) : null}
 
         {analyticsQuery.isError ? (
-          <div className="content-card error-card">
+          <div className="content-card error-card" role="alert">
             <h3>Unable to load production analytics</h3>
             <p>{analyticsQuery.error.message}</p>
           </div>
         ) : null}
 
+        <div aria-live="polite" aria-atomic="false" aria-relevant="additions text">
         {pilotType === "FACTOR" ? (
-          <FactorMetrics qualityHistory={history.quality} state={currentState} />
-        ) : null}
-
-        {pilotType === "TASOWHEEL" ? (
-          <TasowheelMetrics
-            analytics={analyticsQuery.data}
-            efficiencyHistory={history.efficiency}
-            milestones={milestonesQuery.data ?? []}
+          <FactorMetrics
+            qualityHistory={history.quality}
+            qualityTarget={contract.qualityTarget}
             state={currentState}
           />
         ) : null}
 
-        {pilotType === "E4M" ? <E4mMetrics state={currentState} /> : null}
+          {pilotType === "TASOWHEEL" ? (
+            <TasowheelMetrics
+              analytics={analyticsQuery.data}
+              efficiencyHistory={history.efficiency}
+              milestones={milestonesQuery.data ?? []}
+              state={currentState}
+            />
+          ) : null}
+
+          {pilotType === "E4M" ? <E4mMetrics state={currentState} /> : null}
+        </div>
 
         {lastMessage ? (
-          <div className="feed-event-footnote">
+          <div className="feed-event-footnote" aria-live="off">
             Latest socket event: <strong>{lastMessage.type}</strong>
           </div>
         ) : null}

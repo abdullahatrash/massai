@@ -10,7 +10,7 @@ from sqlalchemy.orm import selectinload
 from app.core.auth import CurrentUser
 from app.core.contracts import contract_public_id, get_contract_by_public_id
 from app.core.database import get_db_session
-from app.core.dependencies import require_roles
+from app.core.dependencies import require_contract_reader
 from app.core.formatting import describe_alert
 from app.core.response import ApiException, success
 from app.models.alert import Alert
@@ -154,7 +154,7 @@ def build_timeline(contract: Contract) -> list[dict[str, object]]:
 @router.get("")
 async def get_timeline(
     contract_id: str,
-    current_user: Annotated[CurrentUser, Depends(require_roles("consumer", "admin"))],
+    current_user: Annotated[CurrentUser, Depends(require_contract_reader())],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> dict[str, object]:
     contract = await get_contract_by_public_id(

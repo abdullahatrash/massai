@@ -12,7 +12,11 @@ from sqlalchemy.orm import selectinload
 from app.core.auth import CurrentUser
 from app.core.contracts import contract_public_id, get_contract_by_public_id
 from app.core.database import get_db_session
-from app.core.dependencies import require_consumer, require_contract_access, require_roles
+from app.core.dependencies import (
+    require_consumer,
+    require_contract_access,
+    require_contract_reader,
+)
 from app.core.response import ApiException, success
 from app.models.contract import Contract
 from app.models.milestone import Milestone
@@ -94,6 +98,14 @@ def _is_overdue(milestone: Milestone, *, today: date) -> bool:
     return planned_date < today and (milestone.status or "").upper() != "COMPLETED"
 
 
+def _quality_gate(milestone: Milestone) -> float | None:
+    criteria = dict(milestone.completion_criteria or {})
+    quality_gate = criteria.get("minQualityPassRate")
+    if isinstance(quality_gate, (int, float)):
+        return float(quality_gate)
+    return None
+
+
 def _serialize_milestone_summary(milestone: Milestone, *, today: date) -> dict[str, object]:
     payload = MilestoneSummaryResponse(
         id=str(milestone.id),
@@ -104,6 +116,7 @@ def _serialize_milestone_summary(milestone: Milestone, *, today: date) -> dict[s
         status=milestone.status,
         approvalRequired=bool(milestone.approval_required),
         isOverdue=_is_overdue(milestone, today=today),
+        qualityGate=_quality_gate(milestone),
     )
     return payload.model_dump(by_alias=True)
 
@@ -119,6 +132,7 @@ def _serialize_milestone_detail(milestone: Milestone, *, today: date) -> dict[st
         approvalRequired=bool(milestone.approval_required),
         isOverdue=_is_overdue(milestone, today=today),
         evidence=list(milestone.evidence or []),
+        qualityGate=_quality_gate(milestone),
     )
     return payload.model_dump(by_alias=True)
 
@@ -126,7 +140,7 @@ def _serialize_milestone_detail(milestone: Milestone, *, today: date) -> dict[st
 @router.get("")
 async def list_milestones(
     contract_id: str,
-    current_user: Annotated[CurrentUser, Depends(require_roles("consumer", "admin"))],
+    current_user: Annotated[CurrentUser, Depends(require_contract_reader())],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> dict[str, object]:
     contract = await get_contract_by_public_id(
@@ -153,7 +167,7 @@ async def list_milestones(
 async def get_milestone(
     contract_id: str,
     milestone_id: str,
-    current_user: Annotated[CurrentUser, Depends(require_roles("consumer", "admin"))],
+    current_user: Annotated[CurrentUser, Depends(require_contract_reader())],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> dict[str, object]:
     contract = await get_contract_by_public_id(

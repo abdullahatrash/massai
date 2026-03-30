@@ -18,7 +18,12 @@ from app.models.contract import Contract
 from app.models.notification import Notification
 from app.core.schema_validator import SchemaNotFoundError, SchemaValidationError, validate
 from app.models.status_update import StatusUpdate
-from app.schemas.ingest import IngestRequest, IngestResponse
+from app.schemas.ingest import (
+    DocumentEvidenceReference,
+    EvidenceItem,
+    IngestRequest,
+    IngestResponse,
+)
 from app.services.alert_blockchain import AlertBlockchainService
 from app.services.monitoring import MonitoringService
 from app.services.notification import NotificationService
@@ -40,10 +45,23 @@ def _schema_error_details(errors: list[dict[str, str]]) -> list[dict[str, str]]:
     return details
 
 
-def _serialize_evidence(evidence: list[Any] | None) -> list[str]:
+def _serialize_evidence(evidence: list[EvidenceItem] | None) -> list[Any]:
     if not evidence:
         return []
-    return [str(item) for item in evidence]
+
+    payload: list[Any] = []
+    for item in evidence:
+        if isinstance(item, DocumentEvidenceReference):
+            payload.append(
+                item.model_dump(
+                    by_alias=True,
+                    exclude_none=True,
+                    mode="json",
+                )
+            )
+            continue
+        payload.append(str(item))
+    return payload
 
 
 async def _broadcast_update_messages(

@@ -1,13 +1,16 @@
 # MaaSAI — Production Monitoring Tool
+
 ## Architecture & Findings Document
 
-| Field | Value |
-|---|---|
-| Document Version | 1.0 |
-| Date | March 16, 2026 |
-| Author | System Design Session |
-| Scope | BP02 Monitoring Tool — Backend API + Consumer UI |
-| Tech Stack | Python FastAPI · React 19 · PostgreSQL · Docker |
+
+| Field            | Value                                            |
+| ---------------- | ------------------------------------------------ |
+| Document Version | 1.0                                              |
+| Date             | March 16, 2026                                   |
+| Author           | System Design Session                            |
+| Scope            | BP02 Monitoring Tool — Backend API + Consumer UI |
+| Tech Stack       | Python FastAPI · React 19 · PostgreSQL · Docker  |
+
 
 ---
 
@@ -34,6 +37,7 @@
 ### What We Are Building
 
 A **generic production monitoring tool** that sits between:
+
 - **The Provider** (manufacturer): pushes production data
 - **The Consumer** (company that ordered manufacturing): views progress, receives alerts, approves milestones
 - **MSB/SCT** (MaaS Blockchain + Smart Contracts Toolkit): immutable audit trail for key events
@@ -63,11 +67,13 @@ A **generic production monitoring tool** that sits between:
 **Key Problem Being Solved (BP02):** Currently, during production, the Factor sales team must repeatedly call or email providers to ask for status updates. This is entirely manual and inefficient.
 
 **Relevant Business Processes:**
+
 - **BP01:** Provider Search (finding external manufacturers)
 - **BP02:** Monitoring of provider production ← **our scope**
 - **BP03:** Receiving production + quality control
 
 **Infrastructure used in BP02:**
+
 - Edge MaaS Data Storage (at provider site)
 - Data Integrator (normalises and forwards data)
 - Remote Monitoring & Control Panels (consumer-facing)
@@ -75,13 +81,16 @@ A **generic production monitoring tool** that sits between:
 
 **KPIs for BP02:**
 
-| KPI | Description | Goal |
-|---|---|---|
-| KPI1_P1_BP02 | Average manual status requests per order | Reduce to zero |
-| KPI2_P1_BP02 | Customer satisfaction with order status updates | Increase |
-| KPI3_P1_BP02 | % of automated status updates | Maximise (target 100%) |
+
+| KPI          | Description                                     | Goal                   |
+| ------------ | ----------------------------------------------- | ---------------------- |
+| KPI1_P1_BP02 | Average manual status requests per order        | Reduce to zero         |
+| KPI2_P1_BP02 | Customer satisfaction with order status updates | Increase               |
+| KPI3_P1_BP02 | % of automated status updates                   | Maximise (target 100%) |
+
 
 **Data pushed by provider:**
+
 - Quantity produced (current vs. planned)
 - Current production stage
 - Quality inspection results
@@ -98,9 +107,11 @@ A **generic production monitoring tool** that sits between:
 **Key Problem Being Solved (BP01):** Automating the quotation process from customer request to order acceptance.
 
 **Relevant Business Process:**
+
 - **BP01:** Quotation process (customer request → routing → capacity → quote → acceptance → order)
 
 **Infrastructure:**
+
 - APS (Advanced Planning & Scheduling) system
 - Powered ERP
 - MaaS Dynamic Catalogue, Supply Chain Simulator, Provider Planner
@@ -108,18 +119,21 @@ A **generic production monitoring tool** that sits between:
 
 **KPIs:**
 
-| KPI | Description |
-|---|---|
-| KPI1_P2_BP01 | Effective resource utilisation |
-| KPI2_P2_BP01 | Inventory turnover rate |
-| KPI3_P2_BP01 | Manufacturing process capability (OTD) |
+
+| KPI          | Description                                |
+| ------------ | ------------------------------------------ |
+| KPI1_P2_BP01 | Effective resource utilisation             |
+| KPI2_P2_BP01 | Inventory turnover rate                    |
+| KPI3_P2_BP01 | Manufacturing process capability (OTD)     |
 | KPI4_P2_BP01 | Downtime duration of manufacturing process |
-| KPI5_P2_BP01 | Production efficiency index |
-| KPI6_P2_BP01 | Productivity index of work units |
-| KPI7_P2_BP01 | Carbon footprint per product |
-| KPI8_P2_BP01 | Energy consumption |
+| KPI5_P2_BP01 | Production efficiency index                |
+| KPI6_P2_BP01 | Productivity index of work units           |
+| KPI7_P2_BP01 | Carbon footprint per product               |
+| KPI8_P2_BP01 | Energy consumption                         |
+
 
 **Data pushed by provider (once order accepted):**
+
 - Routing step completion (turning → heat treatment → grinding → inspection)
 - Setup time actual vs. planned
 - Cycle time per piece
@@ -137,36 +151,43 @@ A **generic production monitoring tool** that sits between:
 **Key Problem Being Solved (BP02):** Development process monitoring, optimisation, and information exchange between provider and consumer during design and manufacturing phases.
 
 **Relevant Business Processes:**
+
 - **BP01:** Customer interaction & commercial exchange
 - **BP02:** Development process monitoring ← **our scope**
 - **BP03:** Maintenance process monitoring (post-deployment PCBs)
 - **BP04:** End-of-life policy automation (R3T toolkit)
 
 **Infrastructure used in BP02:**
+
 - Control Panels (CP) — consumer views progress
 - Data Analytics (DA) — transparency and optimisation
 - Point-to-Point Secure Messaging (PSM)
 
 **Development Milestones (M1–M6):**
 
-| Milestone | Name | Customer Approval Required |
-|---|---|---|
-| M1 | Idealization complete | No |
-| M2 | Concept validation approved | **Yes** |
-| M3 | Engineering design finalized | **Yes** |
-| M4 | Prototype manufactured | No |
-| M5 | Testing and validation complete | **Yes** |
-| M6 | Production batch manufactured | **Yes** |
+
+| Milestone | Name                            | Customer Approval Required |
+| --------- | ------------------------------- | -------------------------- |
+| M1        | Idealization complete           | No                         |
+| M2        | Concept validation approved     | **Yes**                    |
+| M3        | Engineering design finalized    | **Yes**                    |
+| M4        | Prototype manufactured          | No                         |
+| M5        | Testing and validation complete | **Yes**                    |
+| M6        | Production batch manufactured   | **Yes**                    |
+
 
 **KPIs for BP02:**
 
-| KPI | Description |
-|---|---|
-| KPI1_P5_BP02 | Manufacturing Time Availability Gain |
-| KPI2_P5_BP02 | Production Flow Efficiency Improvement |
+
+| KPI          | Description                             |
+| ------------ | --------------------------------------- |
+| KPI1_P5_BP02 | Manufacturing Time Availability Gain    |
+| KPI2_P5_BP02 | Production Flow Efficiency Improvement  |
 | KPI3_P5_BP02 | Waste Avoidance Through Remanufacturing |
 
+
 **Data pushed by provider:**
+
 - Current phase (M1–M6)
 - Completion percentage per phase
 - Deliverables submitted (CAD files, BOMs, test plans)
@@ -186,6 +207,7 @@ Provider pushes update → Rule engine evaluates → State updates → Consumer 
 ```
 
 Every pilot has:
+
 - A contract (from blockchain) with defined milestones
 - A provider that pushes structured updates
 - A consumer that reads progress without caring about blockchain
@@ -195,14 +217,16 @@ Every pilot has:
 
 ### What Is Pilot-Specific
 
-| Concern | Factor (P1) | Tasowheel (P2) | E4M (P5) |
-|---|---|---|---|
-| Update payload shape | Qty, quality, stage, machine data | Routing step, downtime, energy | Phase, test results, deliverables |
-| Milestone granularity | Production stages | Manufacturing routing steps | M1–M6 design phases |
-| Approval gates | Final quality acceptance | Customer quote acceptance | Per-phase sign-off (M2, M3, M5, M6) |
-| KPI metrics | Manual requests, automation % | OTD, resource utilisation, carbon | Time availability, flow efficiency |
-| Data source | Edge MaaS Data Storage | APS/ERP (Powered ERP) | Control Panels |
-| Update interval | Every 4 hours typical | Per step completion event | Phase-level (days) |
+
+| Concern               | Factor (P1)                       | Tasowheel (P2)                    | E4M (P5)                            |
+| --------------------- | --------------------------------- | --------------------------------- | ----------------------------------- |
+| Update payload shape  | Qty, quality, stage, machine data | Routing step, downtime, energy    | Phase, test results, deliverables   |
+| Milestone granularity | Production stages                 | Manufacturing routing steps       | M1–M6 design phases                 |
+| Approval gates        | Final quality acceptance          | Customer quote acceptance         | Per-phase sign-off (M2, M3, M5, M6) |
+| KPI metrics           | Manual requests, automation %     | OTD, resource utilisation, carbon | Time availability, flow efficiency  |
+| Data source           | Edge MaaS Data Storage            | APS/ERP (Powered ERP)             | Control Panels                      |
+| Update interval       | Every 4 hours typical             | Per step completion event         | Phase-level (days)                  |
+
 
 ### Key Design Insight
 
@@ -216,13 +240,15 @@ The monitoring backend can be **fully generic** with pilot-specific **JSON schem
 
 **The blockchain (MSB) is NOT a queryable database.** It cannot serve a real-time dashboard.
 
-| Concern | Why Blockchain Alone Is Not Enough |
-|---|---|
-| Query performance | No SELECT WHERE, joins, or pagination on-chain |
-| Write latency | 3–6 block confirmations per write (seconds to minutes) |
-| Cost | Every on-chain write has a gas fee |
-| Time-series data | Sensor updates every few seconds cannot go to blockchain |
-| Consumer UI speed | Millisecond response times required |
+
+| Concern           | Why Blockchain Alone Is Not Enough                       |
+| ----------------- | -------------------------------------------------------- |
+| Query performance | No SELECT WHERE, joins, or pagination on-chain           |
+| Write latency     | 3–6 block confirmations per write (seconds to minutes)   |
+| Cost              | Every on-chain write has a gas fee                       |
+| Time-series data  | Sensor updates every few seconds cannot go to blockchain |
+| Consumer UI speed | Millisecond response times required                      |
+
 
 ### Split Storage Strategy
 
@@ -317,6 +343,7 @@ PENDING_SIGNATURES
 ```
 
 Every state transition is:
+
 1. Written to PostgreSQL immediately (fast UI update)
 2. Written to MSB blockchain asynchronously (audit trail)
 
@@ -473,21 +500,23 @@ Authorization: Bearer {provider_token}
 
 ### 7.2 Consumer API (Read-Only, No Blockchain Jargon)
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/api/v1/contracts` | List all contracts for consumer |
-| `GET` | `/api/v1/contracts/{id}` | Contract overview + current status |
-| `GET` | `/api/v1/contracts/{id}/timeline` | All events, chronological |
-| `GET` | `/api/v1/contracts/{id}/milestones` | Milestones with statuses |
-| `GET` | `/api/v1/contracts/{id}/milestones/{mId}` | Single milestone + evidence |
-| `POST` | `/api/v1/contracts/{id}/milestones/{mId}/approve` | Consumer approves milestone |
-| `POST` | `/api/v1/contracts/{id}/milestones/{mId}/reject` | Consumer rejects milestone |
-| `GET` | `/api/v1/contracts/{id}/alerts` | Active alerts |
-| `GET` | `/api/v1/contracts/{id}/alerts/history` | All alerts ever fired |
-| `POST` | `/api/v1/contracts/{id}/alerts/{aId}/acknowledge` | Consumer acknowledges alert |
-| `GET` | `/api/v1/contracts/{id}/analytics` | KPIs and progress metrics |
-| `GET` | `/api/v1/contracts/{id}/documents` | All files linked to contract |
-| `WS` | `/ws/contracts/{id}` | Real-time updates pushed to UI |
+
+| Method | Path                                              | Description                        |
+| ------ | ------------------------------------------------- | ---------------------------------- |
+| `GET`  | `/api/v1/contracts`                               | List all contracts for consumer    |
+| `GET`  | `/api/v1/contracts/{id}`                          | Contract overview + current status |
+| `GET`  | `/api/v1/contracts/{id}/timeline`                 | All events, chronological          |
+| `GET`  | `/api/v1/contracts/{id}/milestones`               | Milestones with statuses           |
+| `GET`  | `/api/v1/contracts/{id}/milestones/{mId}`         | Single milestone + evidence        |
+| `POST` | `/api/v1/contracts/{id}/milestones/{mId}/approve` | Consumer approves milestone        |
+| `POST` | `/api/v1/contracts/{id}/milestones/{mId}/reject`  | Consumer rejects milestone         |
+| `GET`  | `/api/v1/contracts/{id}/alerts`                   | Active alerts                      |
+| `GET`  | `/api/v1/contracts/{id}/alerts/history`           | All alerts ever fired              |
+| `POST` | `/api/v1/contracts/{id}/alerts/{aId}/acknowledge` | Consumer acknowledges alert        |
+| `GET`  | `/api/v1/contracts/{id}/analytics`                | KPIs and progress metrics          |
+| `GET`  | `/api/v1/contracts/{id}/documents`                | All files linked to contract       |
+| `WS`   | `/ws/contracts/{id}`                              | Real-time updates pushed to UI     |
+
 
 ---
 
@@ -581,6 +610,7 @@ blockchain_events (
 ```
 
 **Alert rules:**
+
 - `quantityProduced / quantityPlanned` progress falls behind schedule by > threshold days
 - `qualityPassRate` drops below configured threshold (e.g., 0.95)
 - No update received within `dataUpdateFrequency` window
@@ -606,6 +636,7 @@ blockchain_events (
 ```
 
 **Alert rules:**
+
 - Downtime exceeds threshold
 - Cycle time deviation > X%
 - Routing step delayed by > N days vs. planned delivery
@@ -642,6 +673,7 @@ blockchain_events (
 ```
 
 **Alert rules:**
+
 - Phase behind planned date by > threshold
 - Any `testResults` entry with `result: FAIL`
 - `approvalRequired: true` but no consumer response within N days
@@ -654,6 +686,7 @@ blockchain_events (
 ### Purpose
 
 Simulate factory data locally without real ERP/MES/Edge device connections. Each simulator:
+
 1. Reads the contract configuration to know what to generate
 2. Generates realistic fake data at configurable intervals
 3. POSTs to the Provider Ingest API
@@ -704,21 +737,25 @@ Swap between them via environment variable: `BLOCKCHAIN_ADAPTER=mock|real`
 
 The consumer sees **no** block numbers, transaction hashes, gas fees, or contract addresses. All blockchain activity is translated into plain business language.
 
-| Blockchain term | Consumer sees |
-|---|---|
-| Contract deployed on MSB | "Agreement registered" |
-| Milestone logged on-chain | "Milestone confirmed and recorded" |
-| Transaction hash | Not shown (available in audit export only) |
-| Block confirmation | Hidden — UI shows "Confirmed" once synced |
+
+| Blockchain term           | Consumer sees                              |
+| ------------------------- | ------------------------------------------ |
+| Contract deployed on MSB  | "Agreement registered"                     |
+| Milestone logged on-chain | "Milestone confirmed and recorded"         |
+| Transaction hash          | Not shown (available in audit export only) |
+| Block confirmation        | Hidden — UI shows "Confirmed" once synced  |
+
 
 ### Pages and Components
 
 **Page 1: Contracts List**
+
 - Table of active contracts
 - Status badge per contract (On Track / Delayed / Action Required / Completed)
 - Quick stats: milestones done / total, next due date
 
 **Page 2: Contract Overview**
+
 - Large status banner
 - Progress bar (milestones complete)
 - Key info: product, quantity, delivery date, parties
@@ -726,6 +763,7 @@ The consumer sees **no** block numbers, transaction hashes, gas fees, or contrac
 - Recent activity feed (last 5 events)
 
 **Page 3: Milestone Timeline**
+
 - Visual vertical or Gantt-style timeline
 - Each milestone card:
   - Name, planned date, actual date
@@ -735,6 +773,7 @@ The consumer sees **no** block numbers, transaction hashes, gas fees, or contrac
 - Color coding: green (done) / amber (at risk) / red (overdue) / blue (pending)
 
 **Page 4: Production Feed (Live)**
+
 - Real-time via WebSocket
 - Pilot-specific metrics displayed:
   - Factor: qty produced progress bar, quality pass rate gauge, current stage
@@ -744,12 +783,14 @@ The consumer sees **no** block numbers, transaction hashes, gas fees, or contrac
 - Offline warning if provider stops sending data
 
 **Page 5: Alert Center**
+
 - Active alerts with severity badge
 - Alert description in plain language (no technical codes)
 - Acknowledge button
 - Full alert history with filter by severity/date
 
 **Page 6: Analytics & KPIs**
+
 - Pilot-specific KPIs tracked against targets
 - Charts: actual vs. planned timeline, quality trend, efficiency over time
 - Export to PDF/CSV for reporting
@@ -827,13 +868,15 @@ services:
 
 ### Test Scenarios (switch via env)
 
-| Scenario | Effect on system |
-|---|---|
-| `normal` | Steady progress, all milestones on track |
-| `delay` | Provider stops sending data after milestone 2 → triggers no-data alert |
-| `quality_failure` | Quality pass rate drops below threshold → triggers quality alert |
-| `milestone_complete` | Provider submits milestone completion → triggers approval flow |
-| `dispute` | Consumer rejects a milestone → contract enters DISPUTED state |
+
+| Scenario             | Effect on system                                                       |
+| -------------------- | ---------------------------------------------------------------------- |
+| `normal`             | Steady progress, all milestones on track                               |
+| `delay`              | Provider stops sending data after milestone 2 → triggers no-data alert |
+| `quality_failure`    | Quality pass rate drops below threshold → triggers quality alert       |
+| `milestone_complete` | Provider submits milestone completion → triggers approval flow         |
+| `dispute`            | Consumer rejects a milestone → contract enters DISPUTED state          |
+
 
 ---
 
@@ -841,20 +884,22 @@ services:
 
 Since one person is handling everything, here is the recommended sequence to always have something working end-to-end:
 
-| Phase | What to Build | Deliverable |
-|---|---|---|
-| **1** | Repo init, Docker Compose, PostgreSQL schema + seed data | `docker compose up` works, DB has 3 seeded contracts |
-| **2** | Provider Ingest API + pilot JSON schema validation | Can POST fake updates with `curl` |
-| **3** | Mock sensor simulators (all 3 pilots, 2 scenarios each) | Data flows automatically into DB |
-| **4** | Consumer read APIs (`/contracts`, `/milestones`, `/alerts`) | Full data available via REST |
-| **5** | WebSocket endpoint | Real-time updates working |
-| **6** | Mock MSB blockchain service | Blockchain events logged locally |
-| **7** | Rule engine (alert conditions per pilot) | Alerts fire on `delay` and `quality_failure` scenarios |
-| **8** | React frontend — contracts list + contract overview page | First visual dashboard |
-| **9** | Milestone timeline page + approval flow | Consumer can approve/reject |
-| **10** | Production feed page (live, WebSocket) | Real-time metrics visible |
-| **11** | Alert center page | Full alert workflow usable |
-| **12** | Analytics page + KPI charts | All 3 pilot KPIs tracked |
+
+| Phase  | What to Build                                               | Deliverable                                            |
+| ------ | ----------------------------------------------------------- | ------------------------------------------------------ |
+| **1**  | Repo init, Docker Compose, PostgreSQL schema + seed data    | `docker compose up` works, DB has 3 seeded contracts   |
+| **2**  | Provider Ingest API + pilot JSON schema validation          | Can POST fake updates with `curl`                      |
+| **3**  | Mock sensor simulators (all 3 pilots, 2 scenarios each)     | Data flows automatically into DB                       |
+| **4**  | Consumer read APIs (`/contracts`, `/milestones`, `/alerts`) | Full data available via REST                           |
+| **5**  | WebSocket endpoint                                          | Real-time updates working                              |
+| **6**  | Mock MSB blockchain service                                 | Blockchain events logged locally                       |
+| **7**  | Rule engine (alert conditions per pilot)                    | Alerts fire on `delay` and `quality_failure` scenarios |
+| **8**  | React frontend — contracts list + contract overview page    | First visual dashboard                                 |
+| **9**  | Milestone timeline page + approval flow                     | Consumer can approve/reject                            |
+| **10** | Production feed page (live, WebSocket)                      | Real-time metrics visible                              |
+| **11** | Alert center page                                           | Full alert workflow usable                             |
+| **12** | Analytics page + KPI charts                                 | All 3 pilot KPIs tracked                               |
+
 
 ---
 
@@ -870,27 +915,31 @@ This section documents the **actual blockchain infrastructure** already deployed
 
 ### 13.1 Network Overview
 
-| Component | Technology | Details |
-|---|---|---|
-| Blockchain Platform | **Ethereum (EVM-compatible)** | Full EVM support — smart contracts in Solidity |
-| Consensus Mechanism | **Proof of Authority (PoA)** | Faster than PoW/PoS, suited for private permissioned networks |
-| Blockchain Client | **Hyperledger Besu** | Supports custom PoA, flexible enterprise configuration |
-| Wallet | **MetaMask** | User interface for signing transactions and interacting with contracts |
-| Block Explorer | **BlockScout** | Compatible with Besu; monitors transactions, contract calls, blocks |
-| Secondary Explorer | **Quorum Explorer** | Provided by Quorum Dev Quickstart setup |
-| Deployment Tool | **Quorum Dev Quickstart** | Docker-based network setup (`ConsenSys/quorum-dev-quickstart`) |
-| Reverse Proxy | **nginx + Cloudflare DNS** | Makes endpoints publicly accessible |
-| Smart Contract Language | **Solidity** | Contracts compiled and deployed on the network |
+
+| Component               | Technology                    | Details                                                                |
+| ----------------------- | ----------------------------- | ---------------------------------------------------------------------- |
+| Blockchain Platform     | **Ethereum (EVM-compatible)** | Full EVM support — smart contracts in Solidity                         |
+| Consensus Mechanism     | **Proof of Authority (PoA)**  | Faster than PoW/PoS, suited for private permissioned networks          |
+| Blockchain Client       | **Hyperledger Besu**          | Supports custom PoA, flexible enterprise configuration                 |
+| Wallet                  | **MetaMask**                  | User interface for signing transactions and interacting with contracts |
+| Block Explorer          | **BlockScout**                | Compatible with Besu; monitors transactions, contract calls, blocks    |
+| Secondary Explorer      | **Quorum Explorer**           | Provided by Quorum Dev Quickstart setup                                |
+| Deployment Tool         | **Quorum Dev Quickstart**     | Docker-based network setup (`ConsenSys/quorum-dev-quickstart`)         |
+| Reverse Proxy           | **nginx + Cloudflare DNS**    | Makes endpoints publicly accessible                                    |
+| Smart Contract Language | **Solidity**                  | Contracts compiled and deployed on the network                         |
+
 
 ---
 
 ### 13.2 Live Network Endpoints
 
-| Endpoint | URL | Purpose |
-|---|---|---|
-| **RPC Node** | `https://entrynet-maasai.euinno.eu` | Connect wallets, send transactions, call contracts |
-| **BlockScout Explorer** | `https://blockscout-maasai.euinno.eu` | View transactions, blocks, contract events |
-| **Quorum Explorer** | `https://explorer-maasai.euinno.eu` | Alternative block explorer |
+
+| Endpoint                | URL                                   | Purpose                                            |
+| ----------------------- | ------------------------------------- | -------------------------------------------------- |
+| **RPC Node**            | `https://entrynet-maasai.euinno.eu`   | Connect wallets, send transactions, call contracts |
+| **BlockScout Explorer** | `https://blockscout-maasai.euinno.eu` | View transactions, blocks, contract events         |
+| **Quorum Explorer**     | `https://explorer-maasai.euinno.eu`   | Alternative block explorer                         |
+
 
 > **For our tool:** The `RealMSBService` implementation in our `BlockchainService` adapter calls `https://entrynet-maasai.euinno.eu` via standard Ethereum JSON-RPC. The `explorerUrl` field in blockchain event responses links to `https://blockscout-maasai.euinno.eu`.
 
@@ -922,26 +971,31 @@ The existing smart contracts were designed around the **Barba Stathis food produ
 
 **Deployed Contracts:**
 
-| Contract | Purpose |
-|---|---|
-| `RoleManagement` | Defines user roles (Admin, Client, Warehouse Manager, Delivery Responsible). Grants/revokes permissions. First deployer becomes Admin. |
-| `OrderManagement` | Logs and stores orders on-chain. Each order gets a unique ID. Admin can edit order details. |
-| `WarehouseManagement` | Manages stock levels, checks warehouse adequacy before dispatch, handles restocking events. |
-| `DeliveryManagement` | Tracks delivery stages until package arrival. Marks order complete on delivery. |
+
+| Contract              | Purpose                                                                                                                                |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `RoleManagement`      | Defines user roles (Admin, Client, Warehouse Manager, Delivery Responsible). Grants/revokes permissions. First deployer becomes Admin. |
+| `OrderManagement`     | Logs and stores orders on-chain. Each order gets a unique ID. Admin can edit order details.                                            |
+| `WarehouseManagement` | Manages stock levels, checks warehouse adequacy before dispatch, handles restocking events.                                            |
+| `DeliveryManagement`  | Tracks delivery stages until package arrival. Marks order complete on delivery.                                                        |
+
 
 **Contract Inheritance pattern (Solidity):**
+
 - Contracts use OOP inheritance for code reuse
 - Child contracts inherit all functions and state from parent
 - Reduces redundancy across role-checking logic
 
 **User Roles defined:**
 
-| Role | Description |
-|---|---|
-| `Administrator` | Full access — can call all functions, modify orders/warehouse, grant/revoke roles |
-| `Client` | Can log new orders and view their own orders |
-| `Warehouse Manager` (Provider) | Can view orders, manage stock checks, trigger dispatch |
-| `Delivery Responsible` | Can update delivery location/status, mark orders complete |
+
+| Role                           | Description                                                                       |
+| ------------------------------ | --------------------------------------------------------------------------------- |
+| `Administrator`                | Full access — can call all functions, modify orders/warehouse, grant/revoke roles |
+| `Client`                       | Can log new orders and view their own orders                                      |
+| `Warehouse Manager` (Provider) | Can view orders, manage stock checks, trigger dispatch                            |
+| `Delivery Responsible`         | Can update delivery location/status, mark orders complete                         |
+
 
 ---
 
@@ -950,6 +1004,7 @@ The existing smart contracts were designed around the **Barba Stathis food produ
 **For local development:** Use `BLOCKCHAIN_ADAPTER=mock` — the `MockMSBService` writes events to a local SQLite file, returns fake transaction hashes, and simulates the BlockScout explorer URL pattern.
 
 **For staging/production:** Use `BLOCKCHAIN_ADAPTER=real` — the `RealMSBService` connects to:
+
 - RPC: `https://entrynet-maasai.euinno.eu` (JSON-RPC calls via `web3.py`)
 - Explorer links: `https://blockscout-maasai.euinno.eu/tx/{txHash}`
 
@@ -1002,3 +1057,4 @@ assert w3.is_connected()
 2. MaaSAI Project. (2026). *Pilot 2 TASOWHEEL — Optimising a Gears Manufacturing as a Service Production*. 3rd Plenary Meeting Presentation. Tampere, Finland.
 3. MaaSAI Project. (2026). *Pilot 5 E4M — Smart Electronics Manufacturing as a Service*. 3rd Plenary Meeting Presentation. Tampere, Finland.
 4. MaaSAI Project. (2026). *Blockchain and Smart Contracts Workflow — Project Context and Tool Integration Specification v1.0*. REQUEST.md.
+

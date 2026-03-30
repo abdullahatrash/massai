@@ -5,17 +5,10 @@ import {
   useRef,
   useState,
 } from "react";
-import { Activity, AlertTriangle, Binary, Milestone, Trash2 } from "lucide-react";
+import { Activity, AlertTriangle, Binary, Milestone, Radio, Trash2 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +19,7 @@ import {
 } from "../../lib/contractWebSocketPool";
 
 type EventLogPanelProps = {
-  contractId: string;
+  state: EventLogState;
 };
 
 type EventLogEntry = {
@@ -40,6 +33,13 @@ type EventLogEntry = {
 };
 
 type EventLogStatus = "connecting" | "connected" | "disconnected" | "error";
+
+type EventLogState = {
+  clearEntries: () => void;
+  entries: EventLogEntry[];
+  errorMessage: string | null;
+  status: EventLogStatus;
+};
 
 function buildWebsocketUrl(contractId: string, token: string) {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
@@ -123,68 +123,81 @@ function createLogEntry(message: Record<string, unknown>): EventLogEntry {
   };
 }
 
-function getStatusBadgeClassName(status: EventLogStatus) {
+function getStatusDotClassName(status: EventLogStatus) {
   if (status === "connected") {
-    return "border-emerald-300/25 bg-emerald-300/12 text-emerald-50";
+    return "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]";
   }
   if (status === "error" || status === "disconnected") {
-    return "border-rose-300/25 bg-rose-300/12 text-rose-100";
+    return "bg-rose-400 shadow-[0_0_6px_rgba(251,113,133,0.5)]";
   }
 
-  return "border-amber-300/25 bg-amber-300/12 text-amber-50";
+  return "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.5)] animate-pulse";
 }
 
 function getEntryClassName(entry: EventLogEntry) {
   if (entry.severityClass === "alert") {
-    return "border-rose-300/18 bg-rose-400/[0.06]";
+    return "border-rose-400/15 bg-rose-400/[0.04]";
   }
   if (entry.severityClass === "milestone") {
-    return "border-amber-300/18 bg-amber-400/[0.06]";
+    return "border-amber-400/15 bg-amber-400/[0.04]";
   }
   if (entry.severityClass === "blockchain") {
-    return "border-sky-300/18 bg-sky-400/[0.06]";
+    return "border-sky-400/15 bg-sky-400/[0.04]";
   }
   if (entry.severityClass === "success") {
-    return "border-emerald-300/18 bg-emerald-400/[0.06]";
+    return "border-emerald-400/15 bg-emerald-400/[0.04]";
   }
 
-  return "border-white/10 bg-white/[0.03]";
+  return "border-white/[0.06] bg-white/[0.02]";
 }
 
 function getEntryIcon(entry: EventLogEntry) {
   if (entry.severityClass === "alert") {
-    return <AlertTriangle className="text-rose-200" />;
+    return <AlertTriangle className="size-3.5 text-rose-300" />;
   }
   if (entry.severityClass === "milestone") {
-    return <Milestone className="text-amber-200" />;
+    return <Milestone className="size-3.5 text-amber-300" />;
   }
   if (entry.severityClass === "blockchain") {
-    return <Binary className="text-sky-200" />;
+    return <Binary className="size-3.5 text-sky-300" />;
   }
 
-  return <Activity className="text-slate-400" />;
+  return <Activity className="size-3.5 text-slate-500" />;
 }
 
-export function EventLogPanel({ contractId }: EventLogPanelProps) {
+export function useEventLogStream(
+  contractId: string | undefined,
+  onEventCountChange?: (count: number) => void,
+): EventLogState {
   const { token } = useAuth();
   const [entries, setEntries] = useState<EventLogEntry[]>([]);
   const [status, setStatus] = useState<EventLogStatus>("connecting");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const bottomAnchorRef = useRef<HTMLDivElement | null>(null);
   const connectionIdRef = useRef(0);
 
   const appendEntry = useEffectEvent((message: Record<string, unknown>) => {
     startTransition(() => {
-      setEntries((currentEntries) => [...currentEntries.slice(-99), createLogEntry(message)]);
+      setEntries((currentEntries) => {
+        const nextEntries = [...currentEntries.slice(-99), createLogEntry(message)];
+        return nextEntries;
+      });
     });
   });
 
   useEffect(() => {
-    bottomAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-  }, [entries.length]);
+    onEventCountChange?.(entries.length);
+  }, [entries.length, onEventCountChange]);
 
   useEffect(() => {
-    if (!token) {
+    startTransition(() => {
+      setEntries([]);
+      setErrorMessage(null);
+      setStatus(token && contractId ? "connecting" : "disconnected");
+    });
+  }, [contractId, token]);
+
+  useEffect(() => {
+    if (!token || !contractId) {
       connectionIdRef.current += 1;
       setStatus("disconnected");
       return;
@@ -236,69 +249,90 @@ export function EventLogPanel({ contractId }: EventLogPanelProps) {
     };
   }, [appendEntry, contractId, token]);
 
+  return {
+    clearEntries: () => {
+      startTransition(() => {
+        setEntries([]);
+      });
+    },
+    entries,
+    errorMessage,
+    status,
+  };
+}
+
+export function EventLogPanel({ state }: EventLogPanelProps) {
+  const { clearEntries, entries, errorMessage, status } = state;
+  const bottomAnchorRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    bottomAnchorRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [entries.length]);
+
   return (
-    <Card className="h-full border-white/10 bg-white/[0.045] text-white shadow-[0_24px_90px_rgba(0,0,0,0.25)] backdrop-blur-2xl 2xl:sticky 2xl:top-6">
-      <CardHeader className="border-b border-white/8 pb-4">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <Badge className="border-white/12 bg-white/8 text-white/70">Live feed</Badge>
-            <CardTitle className="mt-4 text-2xl text-white">Event log</CardTitle>
-            <CardDescription className="mt-3 text-slate-300">
-              Listening to <code>WS /ws/contracts/{contractId}</code> for simulator-side debugging
-              and demos.
-            </CardDescription>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <Badge className={getStatusBadgeClassName(status)}>{status}</Badge>
-            <Button onClick={() => setEntries([])} type="button" variant="outline">
-              <Trash2 data-icon="inline-start" />
-              Clear
-            </Button>
-          </div>
+    <div className="flex h-full flex-col">
+      {/* Header */}
+      <div className="flex shrink-0 items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-3">
+        <div className="flex items-center gap-2">
+          <span className={cn("size-1.5 rounded-full", getStatusDotClassName(status))} />
+          <h3 className="text-[0.82rem] font-semibold text-white">Event Log</h3>
+          <span className="rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[0.6rem] tabular-nums text-slate-400">
+            {entries.length}
+          </span>
         </div>
-      </CardHeader>
+        <Button
+          className="text-[0.65rem] text-slate-500"
+          onClick={clearEntries}
+          size="sm"
+          variant="ghost"
+        >
+          <Trash2 className="size-3" />
+          Clear
+        </Button>
+      </div>
 
-      <CardContent className="pt-5">
+      {/* Body */}
+      <div className="flex-1 overflow-hidden p-3">
         {errorMessage ? (
-          <div className="mb-4 rounded-[24px] border border-rose-300/15 bg-rose-950/25 p-4 text-sm text-rose-100">
+          <div className="mb-3 rounded-lg border border-rose-400/15 bg-rose-400/[0.04] px-3 py-2 text-[0.72rem] text-rose-300">
             {errorMessage}
           </div>
         ) : null}
 
-        <ScrollArea className="h-[52rem] pr-3">
-          <div className="grid gap-3">
+        <ScrollArea className="h-full pr-2">
+          <div className="grid gap-2">
             {entries.length === 0 ? (
-              <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4">
-                <p className="text-base font-semibold text-white">No live events yet</p>
-                <p className="mt-2 text-sm leading-7 text-slate-300">
-                  Run a scenario or send a manual update to start streaming websocket events.
+              <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-10 text-center">
+                <Radio className="mx-auto size-6 text-slate-600" />
+                <p className="mt-3 text-[0.78rem] font-medium text-slate-400">No events yet</p>
+                <p className="mt-1 text-[0.68rem] text-slate-600">
+                  Run a scenario or send an update to stream WebSocket events here.
                 </p>
               </div>
             ) : (
               entries.map((entry) => (
                 <details
-                  className={cn("rounded-[28px] border p-4", getEntryClassName(entry))}
+                  className={cn("rounded-lg border p-3", getEntryClassName(entry))}
                   key={entry.id}
                 >
                   <summary className="cursor-pointer list-none">
-                    <div className="flex items-start gap-3">
+                    <div className="flex items-start gap-2.5">
                       <div className="mt-0.5">{getEntryIcon(entry)}</div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.18em] text-slate-400">
+                        <div className="flex flex-wrap items-center gap-1.5 text-[0.58rem] uppercase tracking-[0.16em] text-slate-500">
                           <span>{entry.type}</span>
                           {entry.severity ? (
-                            <Badge className="border-rose-300/18 bg-rose-300/12 text-rose-100">
+                            <Badge className="border-rose-400/15 bg-rose-400/8 px-1.5 py-0 text-[0.55rem] text-rose-300">
                               {entry.severity}
                             </Badge>
                           ) : null}
-                          <span>{formatTimestamp(entry.timestamp)}</span>
+                          <span className="ml-auto tabular-nums">{formatTimestamp(entry.timestamp)}</span>
                         </div>
-                        <p className="mt-3 text-sm font-medium text-white">{entry.message}</p>
+                        <p className="mt-1.5 text-[0.75rem] font-medium text-slate-200">{entry.message}</p>
                       </div>
                     </div>
                   </summary>
-                  <pre className="mt-4 overflow-x-auto rounded-[22px] border border-white/10 bg-black/30 p-4 text-xs text-slate-200">
+                  <pre className="mt-3 overflow-x-auto rounded-lg border border-white/[0.06] bg-black/20 p-3 text-[0.65rem] leading-relaxed text-slate-300">
                     {JSON.stringify(entry.raw, null, 2)}
                   </pre>
                 </details>
@@ -307,7 +341,7 @@ export function EventLogPanel({ contractId }: EventLogPanelProps) {
             <div ref={bottomAnchorRef} />
           </div>
         </ScrollArea>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

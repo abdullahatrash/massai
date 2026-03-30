@@ -207,3 +207,24 @@ class AlertsApiIntegrationTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 404)
         payload = response.json()
         self.assertEqual(payload["error"]["code"], "ALERT_NOT_FOUND")
+
+    def test_provider_can_view_and_acknowledge_assigned_alerts(self) -> None:
+        async def override_current_user() -> CurrentUser:
+            return CurrentUser(
+                id="provider-1",
+                email="provider-factor@test.com",
+                preferred_username="provider-factor@test.com",
+                roles=("provider",),
+                contract_ids=("contract-factor-001",),
+            )
+
+        self.app.dependency_overrides[get_current_user] = override_current_user
+        client = TestClient(self.app)
+
+        list_response = client.get("/api/v1/contracts/contract-factor-001/alerts")
+        acknowledge_response = client.post(
+            f"/api/v1/contracts/contract-factor-001/alerts/{self.factor_contract.alerts[0].id}/acknowledge"
+        )
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(acknowledge_response.status_code, 200)

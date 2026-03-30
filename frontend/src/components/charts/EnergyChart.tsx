@@ -4,14 +4,26 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
-  ResponsiveContainer,
-  Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
 
 import type { TasowheelCarbonPoint, TasowheelEnergyPoint } from "../../api/analytics";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../ui/card";
+import {
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from "../ui/chart";
 
 type EnergyChartProps = {
   carbonSeries: TasowheelCarbonPoint[];
@@ -25,6 +37,20 @@ function carbonLabel(timestamp: string): string {
   });
 }
 
+const energyConfig = {
+  energyKwh: {
+    label: "Energy kWh",
+    color: "var(--chart-2)",
+  },
+} satisfies ChartConfig;
+
+const carbonConfig = {
+  cumulativeCarbonKgCo2e: {
+    label: "Cumulative carbon",
+    color: "var(--chart-3)",
+  },
+} satisfies ChartConfig;
+
 export function EnergyChart({ carbonSeries, energySeries }: EnergyChartProps) {
   const carbonData = carbonSeries.map((point) => ({
     ...point,
@@ -33,54 +59,70 @@ export function EnergyChart({ carbonSeries, energySeries }: EnergyChartProps) {
 
   return (
     <div className="chart-stack">
-      <section className="content-card chart-card">
-        <div className="section-header">
-          <div>
-            <span className="eyebrow">Energy</span>
-            <h3>Energy per routing step</h3>
-          </div>
-        </div>
-        <div className="chart-frame">
-          <ResponsiveContainer height={260} width="100%">
-            <BarChart data={energySeries}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(23, 36, 38, 0.12)" />
-              <XAxis dataKey="stepLabel" tickLine={false} />
-              <YAxis tickLine={false} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="energyKwh" fill="#0f766e" name="Energy kWh" radius={[8, 8, 0, 0]} />
+      <Card>
+        <CardHeader>
+          <CardDescription>Energy</CardDescription>
+          <CardTitle>Energy per routing step</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer config={energyConfig} className="h-[260px] w-full">
+            <BarChart accessibilityLayer data={energySeries}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="stepLabel"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+              />
+              <YAxis tickLine={false} axisLine={false} />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="dashed" />}
+              />
+              <ChartLegend content={<ChartLegendContent />} />
+              <Bar
+                dataKey="energyKwh"
+                fill="var(--color-energyKwh)"
+                radius={4}
+              />
             </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
+          </ChartContainer>
+        </CardContent>
+      </Card>
 
-      <section className="content-card chart-card">
-        <div className="section-header">
-          <div>
-            <span className="eyebrow">Carbon</span>
-            <h3>Cumulative carbon</h3>
-          </div>
-        </div>
-        <div className="chart-frame">
-          <ResponsiveContainer height={260} width="100%">
-            <AreaChart data={carbonData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(23, 36, 38, 0.12)" />
-              <XAxis dataKey="label" tickLine={false} />
-              <YAxis tickLine={false} />
-              <Tooltip />
-              <Legend />
+      <Card>
+        <CardHeader>
+          <CardDescription>Carbon</CardDescription>
+          <CardTitle>Cumulative carbon</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ChartContainer config={carbonConfig} className="h-[260px] w-full">
+            <AreaChart accessibilityLayer data={carbonData} margin={{ left: 12, right: 12 }}>
+              <CartesianGrid vertical={false} />
+              <XAxis
+                dataKey="label"
+                tickLine={false}
+                axisLine={false}
+                tickMargin={8}
+              />
+              <YAxis tickLine={false} axisLine={false} />
+              <ChartTooltip
+                cursor={false}
+                content={<ChartTooltipContent indicator="line" />}
+              />
+              <ChartLegend content={<ChartLegendContent />} />
               <Area
                 dataKey="cumulativeCarbonKgCo2e"
-                fill="rgba(15, 118, 110, 0.18)"
-                name="Cumulative carbon"
-                stroke="#14532d"
-                strokeWidth={3}
                 type="monotone"
+                fill="var(--color-cumulativeCarbonKgCo2e)"
+                fillOpacity={0.3}
+                stroke="var(--color-cumulativeCarbonKgCo2e)"
+                strokeWidth={2}
               />
             </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
+          </ChartContainer>
+        </CardContent>
+      </Card>
     </div>
   );
 }

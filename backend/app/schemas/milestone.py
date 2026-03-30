@@ -33,6 +33,7 @@ class MilestoneSummaryResponse(BaseModel):
     status: str | None
     approval_required: bool = Field(alias="approvalRequired")
     is_overdue: bool = Field(alias="isOverdue")
+    quality_gate: float | None = Field(default=None, alias="qualityGate")
 
     model_config = {
         "populate_by_name": True,

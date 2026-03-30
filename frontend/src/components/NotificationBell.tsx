@@ -2,11 +2,14 @@ import {
   startTransition,
   useEffect,
   useEffectEvent,
-  useRef,
   useState,
 } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { Bell } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 import { listContracts } from "../api/contracts";
 import {
@@ -24,7 +27,6 @@ export function NotificationBell() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   const contractsQuery = useQuery({
@@ -69,25 +71,6 @@ export function NotificationBell() {
     };
   }, [invalidateNotifications, token, user?.contractIds]);
 
-  useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        startTransition(() => {
-          setIsOpen(false);
-        });
-      }
-    };
-
-    window.addEventListener("mousedown", handlePointerDown);
-    return () => {
-      window.removeEventListener("mousedown", handlePointerDown);
-    };
-  }, [isOpen]);
-
   const markReadMutation = useMutation({
     mutationFn: (notificationId: string) => markNotificationRead(notificationId),
     onSuccess: () => {
@@ -125,26 +108,30 @@ export function NotificationBell() {
   };
 
   return (
-    <div className="notification-bell-shell" ref={containerRef}>
-      <button
-        aria-expanded={isOpen}
-        aria-haspopup="dialog"
-        className="notification-bell-button"
-        onClick={() => {
-          startTransition(() => {
-            setIsOpen((current) => !current);
-          });
-        }}
-        type="button"
+    <Popover open={isOpen} onOpenChange={setIsOpen}>
+      <PopoverTrigger
+        render={
+          <Button
+            aria-label="Notifications"
+            className="relative size-8"
+            size="icon"
+            variant="ghost"
+          />
+        }
       >
-        <span aria-hidden="true" className="notification-bell-icon">
-          🔔
-        </span>
-        <span className="sr-only">Notifications</span>
-        {unreadCount > 0 ? <span className="notification-bell-badge">{unreadCount}</span> : null}
-      </button>
+        <Bell className="size-4 text-stone-500" />
+        {unreadCount > 0 && (
+          <span className="absolute -right-0.5 -top-0.5 flex size-4 items-center justify-center rounded-full bg-rose-500 text-[0.5rem] font-bold text-white ring-2 ring-white">
+            {unreadCount > 9 ? "9+" : unreadCount}
+          </span>
+        )}
+      </PopoverTrigger>
 
-      {isOpen ? (
+      <PopoverContent
+        align="end"
+        className="max-h-[85vh] w-[360px] overflow-hidden p-0"
+        sideOffset={8}
+      >
         <NotificationDropdown
           contractNames={contractNames}
           isLoading={notificationsQuery.isPending}
@@ -157,7 +144,7 @@ export function NotificationBell() {
           }}
           unreadCount={unreadCount}
         />
-      ) : null}
-    </div>
+      </PopoverContent>
+    </Popover>
   );
 }

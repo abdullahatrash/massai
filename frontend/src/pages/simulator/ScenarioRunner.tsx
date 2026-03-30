@@ -3,13 +3,6 @@ import { Gauge, Play, Square, TimerReset } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
@@ -89,29 +82,29 @@ function summarizeStepResult(result: ScenarioStepResult) {
   return `Step ${result.currentStep}/${result.totalSteps} completed. ${result.step.title}. ${alertSummary}`;
 }
 
-function getStatusBadgeClassName(status: RunnerStatus) {
+function getStatusDotClassName(status: RunnerStatus) {
   if (status === "completed") {
-    return "border-emerald-300/25 bg-emerald-300/12 text-emerald-50";
+    return "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]";
   }
   if (status === "error" || status === "stopped") {
-    return "border-rose-300/25 bg-rose-300/12 text-rose-100";
+    return "bg-rose-400 shadow-[0_0_6px_rgba(251,113,133,0.5)]";
   }
   if (status === "running") {
-    return "border-cyan-300/25 bg-cyan-300/12 text-cyan-50";
+    return "bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.5)] animate-pulse";
   }
 
-  return "border-white/12 bg-white/8 text-white/75";
+  return "bg-slate-500";
 }
 
 function getLogToneClassName(level: ScenarioLogEntry["level"]) {
   if (level === "success") {
-    return "border-emerald-300/18 bg-emerald-400/[0.06]";
+    return "border-emerald-400/15 bg-emerald-400/[0.04]";
   }
   if (level === "error") {
-    return "border-rose-300/18 bg-rose-400/[0.06]";
+    return "border-rose-400/15 bg-rose-400/[0.04]";
   }
 
-  return "border-white/10 bg-white/[0.03]";
+  return "border-white/[0.06] bg-white/[0.02]";
 }
 
 export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerProps) {
@@ -248,83 +241,80 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
   };
 
   return (
-    <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
-      <Card className="border-white/10 bg-white/[0.045] text-white shadow-[0_24px_90px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
-        <CardHeader className="border-b border-white/8 pb-4">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <Badge className="border-white/12 bg-white/8 text-white/70">Scenarios</Badge>
-              <CardTitle className="mt-4 text-2xl text-white">Automated playback</CardTitle>
-              <CardDescription className="mt-3 max-w-2xl text-slate-300">
-                Select a pilot scenario, tune playback speed, and stream the scripted steps into
-                ingest using the configured provider service account.
-              </CardDescription>
-            </div>
-            <Badge className={getStatusBadgeClassName(status)}>{status}</Badge>
+    <div className="space-y-4">
+      {/* ── Controls Panel ── */}
+      <div className="sim-panel">
+        <div className="flex items-center justify-between gap-3 border-b border-white/[0.06] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <span className={cn("size-1.5 rounded-full", getStatusDotClassName(status))} />
+            <h3 className="text-[0.82rem] font-semibold text-white">Scenario Playback</h3>
           </div>
-        </CardHeader>
+          <span className="text-[0.62rem] uppercase tracking-[0.16em] text-slate-500">{status}</span>
+        </div>
 
-        <CardContent className="grid gap-5 pt-5">
+        <div className="space-y-4 p-4">
           {!providerClient && contract.pilotType ? (
-            <div className="rounded-[28px] border border-rose-300/15 bg-rose-950/25 p-4 text-sm text-rose-100">
-              No provider service account is configured for pilot type "{contract.pilotType}".
+            <div className="rounded-lg border border-rose-400/15 bg-rose-400/[0.04] px-3 py-2 text-[0.72rem] text-rose-300">
+              No provider service account configured for pilot type &ldquo;{contract.pilotType}&rdquo;.
             </div>
           ) : null}
 
-          <div className="grid gap-3">
+          {/* Scenario selector */}
+          <div className="grid gap-2">
             {scenarios.length === 0 ? (
-              <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4 text-sm text-slate-300">
+              <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-[0.72rem] text-slate-500">
                 {contract.pilotType
-                  ? `No prebuilt scenarios exist for pilot type "${contract.pilotType}".`
-                  : "No pilot type is set for this contract."}
+                  ? `No prebuilt scenarios for "${contract.pilotType}".`
+                  : "No pilot type set."}
               </div>
             ) : (
               scenarios.map((scenario) => (
-                <button
+                <Button
                   className={cn(
-                    "rounded-[28px] border border-white/10 bg-slate-950/45 p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-white/18 hover:bg-white/[0.08]",
-                    scenario.id === selectedScenarioId ? "border-white/18 bg-white/[0.11]" : null,
+                    "h-auto flex-col items-stretch rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 text-left hover:border-white/10 hover:bg-white/[0.04]",
+                    scenario.id === selectedScenarioId && "border-white/12 bg-white/[0.06]",
                   )}
                   key={scenario.id}
                   onClick={() => setSelectedScenarioId(scenario.id)}
-                  type="button"
+                  variant="ghost"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-base font-semibold text-white">{scenario.name}</p>
-                    <Badge className="border-white/12 bg-white/8 text-white/70">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[0.78rem] font-medium text-white">{scenario.name}</span>
+                    <Badge className="border-white/[0.06] bg-white/[0.04] text-[0.6rem] text-slate-500">
                       {scenario.steps.length} steps
                     </Badge>
                   </div>
-                  <p className="mt-3 text-sm leading-7 text-slate-300">{scenario.summary}</p>
-                </button>
+                  <span className="mt-1.5 text-[0.7rem] leading-relaxed font-normal text-slate-400 whitespace-normal">{scenario.summary}</span>
+                </Button>
               ))
             )}
           </div>
 
+          {/* Status + Speed */}
           {selectedScenario ? (
-            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_300px]">
-              <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-                <div className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                  <TimerReset className="text-slate-500" />
-                  Playback status
+            <div className="grid gap-3 lg:grid-cols-2">
+              <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                <div className="flex items-center gap-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  <TimerReset className="size-3 text-slate-600" />
+                  Status
                 </div>
-                <p className="mt-4 text-base font-semibold text-white">{progressText}</p>
-                <p className="mt-2 text-sm leading-7 text-slate-300">{currentStepLabel}</p>
+                <p className="mt-2 text-[0.78rem] font-medium text-white">{progressText}</p>
+                <p className="mt-1 text-[0.68rem] text-slate-400">{currentStepLabel}</p>
               </div>
 
-              <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-                <div className="flex items-center gap-2 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                  <Gauge className="text-slate-500" />
-                  Playback speed
+              <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3">
+                <div className="flex items-center gap-1.5 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  <Gauge className="size-3 text-slate-600" />
+                  Speed
                 </div>
-                <div className="mt-4 flex items-end justify-between gap-3">
-                  <p className="text-3xl font-semibold tracking-[-0.04em] text-white">
+                <div className="mt-2 flex items-end justify-between gap-3">
+                  <p className="text-[1.2rem] font-semibold tabular-nums tracking-tight text-white">
                     {speedMultiplier}x
                   </p>
-                  <p className="text-sm text-slate-300">Interval multiplier</p>
+                  <p className="text-[0.62rem] text-slate-500">multiplier</p>
                 </div>
                 <Slider
-                  className="mt-5"
+                  className="mt-3"
                   max={SPEED_OPTIONS.length - 1}
                   min={0}
                   onValueChange={(values) =>
@@ -333,7 +323,7 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
                   step={1}
                   value={[speedIndex]}
                 />
-                <div className="mt-3 flex justify-between gap-2 text-xs uppercase tracking-[0.18em] text-slate-400">
+                <div className="mt-2 flex justify-between text-[0.58rem] uppercase tracking-[0.14em] text-slate-600">
                   {SPEED_OPTIONS.map((speed) => (
                     <span key={speed}>{speed}x</span>
                   ))}
@@ -342,10 +332,12 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
             </div>
           ) : null}
 
-          <div className="flex flex-wrap gap-2">
+          {/* Actions */}
+          <div className="flex gap-2">
             <Button
               disabled={!selectedScenario || status === "running" || !providerClient}
               onClick={() => void handleRun()}
+              size="sm"
               type="button"
             >
               <Play data-icon="inline-start" />
@@ -354,6 +346,7 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
             <Button
               disabled={status !== "running"}
               onClick={handleStop}
+              size="sm"
               type="button"
               variant="outline"
             >
@@ -361,45 +354,41 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
               Stop
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      <Card className="border-white/10 bg-white/[0.045] text-white shadow-[0_24px_90px_rgba(0,0,0,0.25)] backdrop-blur-2xl">
-        <CardHeader className="border-b border-white/8 pb-4">
-          <Badge className="border-white/12 bg-white/8 text-white/70">Log</Badge>
-          <CardTitle className="text-2xl text-white">Runner output</CardTitle>
-          <CardDescription className="text-slate-300">
-            Payloads, responses, and scenario-side alerts stream here as each playback step
-            executes.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-5">
-          <ScrollArea className="h-[35rem] pr-3">
-            <div className="grid gap-3">
+      {/* ── Runner Log ── */}
+      <div className="sim-panel">
+        <div className="border-b border-white/[0.06] px-4 py-3">
+          <h3 className="text-[0.82rem] font-semibold text-white">Runner Output</h3>
+        </div>
+        <div className="p-3">
+          <ScrollArea className="h-[28rem] pr-2">
+            <div className="grid gap-2">
               {logs.length === 0 ? (
-                <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4">
-                  <p className="text-base font-semibold text-white">No playback yet</p>
-                  <p className="mt-2 text-sm leading-7 text-slate-300">
-                    Run a scenario to capture payloads, responses, and alert changes here.
+                <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-6 text-center">
+                  <p className="text-[0.78rem] font-medium text-slate-400">No playback yet</p>
+                  <p className="mt-1 text-[0.68rem] text-slate-600">
+                    Run a scenario to capture output here.
                   </p>
                 </div>
               ) : (
                 logs.map((entry) => (
                   <div
                     className={cn(
-                      "rounded-[28px] border p-4",
+                      "rounded-lg border p-3",
                       getLogToneClassName(entry.level),
                     )}
                     key={entry.id}
                   >
-                    <p className="text-sm font-semibold text-white">{entry.message}</p>
+                    <p className="text-[0.75rem] font-medium text-slate-200">{entry.message}</p>
                     {entry.payload ? (
-                      <pre className="mt-3 overflow-x-auto rounded-[22px] border border-white/10 bg-slate-950/50 p-4 text-xs text-slate-200">
+                      <pre className="mt-2 overflow-x-auto rounded-md border border-white/[0.06] bg-black/20 p-2.5 text-[0.62rem] leading-relaxed text-slate-400">
                         {prettyJson(entry.payload)}
                       </pre>
                     ) : null}
                     {entry.response ? (
-                      <pre className="mt-3 overflow-x-auto rounded-[22px] border border-white/10 bg-slate-950/50 p-4 text-xs text-slate-200">
+                      <pre className="mt-2 overflow-x-auto rounded-md border border-white/[0.06] bg-black/20 p-2.5 text-[0.62rem] leading-relaxed text-slate-400">
                         {prettyJson(entry.response)}
                       </pre>
                     ) : null}
@@ -408,8 +397,8 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
               )}
             </div>
           </ScrollArea>
-        </CardContent>
-      </Card>
-    </section>
+        </div>
+      </div>
+    </div>
   );
 }

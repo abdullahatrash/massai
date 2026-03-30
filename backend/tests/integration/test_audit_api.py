@@ -180,7 +180,7 @@ class AuditApiIntegrationTestCase(unittest.TestCase):
         self.assertNotIn("transactionHash", str(contracts_response.json()))
         self.assertNotIn("transactionHash", str(milestones_response.json()))
 
-    def test_provider_role_is_forbidden(self) -> None:
+    def test_provider_can_export_assigned_contract_audit(self) -> None:
         async def override_current_user() -> CurrentUser:
             return CurrentUser(
                 id="provider-1",
@@ -194,8 +194,8 @@ class AuditApiIntegrationTestCase(unittest.TestCase):
         client = TestClient(self.app)
         response = client.get("/api/v1/contracts/contract-factor-001/audit-export")
 
-        self.assertEqual(response.status_code, 403)
-        self.assertEqual(response.json()["error"]["code"], "FORBIDDEN")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["data"]["contractId"], "contract-factor-001")
 
     def test_pdf_format_returns_structured_payload_for_frontend_print_flow(self) -> None:
         client = TestClient(self.app)

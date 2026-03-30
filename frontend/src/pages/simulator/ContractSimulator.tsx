@@ -1,20 +1,19 @@
-import { startTransition, useState } from "react";
+import { startTransition, useCallback, useState } from "react";
 import { useOutletContext, useParams } from "react-router-dom";
-import { CalendarDays, RadioTower, Sparkles, Workflow } from "lucide-react";
+import { CalendarDays, Radio, RadioTower, Sparkles, Workflow } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-import { EventLogPanel } from "./EventLogPanel";
+import { EventLogPanel, useEventLogStream } from "./EventLogPanel";
 import { MilestoneTriggerPanel } from "./MilestoneTriggerPanel";
 import {
   type SimulatorOutletContext,
@@ -42,28 +41,41 @@ export function ContractSimulator() {
   const { contractId } = useParams();
   const { contractsState, refreshSimulatorData } = useOutletContext<SimulatorOutletContext>();
   const [activeTab, setActiveTab] = useState<SimulatorTab>("scenarios");
+  const [eventCount, setEventCount] = useState(0);
+  const [hasNewEvents, setHasNewEvents] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  const handleEventCountChange = useCallback(
+    (count: number) => {
+      setEventCount(count);
+      if (!sheetOpen && count > 0) {
+        setHasNewEvents(true);
+      }
+    },
+    [sheetOpen],
+  );
+
+  const handleSheetOpenChange = (open: boolean) => {
+    setSheetOpen(open);
+    if (open) {
+      setHasNewEvents(false);
+    }
+  };
+  const eventLogState = useEventLogStream(contractId, handleEventCountChange);
 
   if (contractsState.status === "loading") {
     return (
-      <Card className="border-white/10 bg-white/[0.045] text-white shadow-[0_24px_90px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
-        <CardHeader>
-          <CardTitle>Loading contract simulator</CardTitle>
-          <CardDescription className="text-slate-300">
-            Waiting for the seeded contract list before mounting the operator workspace.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="sim-empty-state">
+        Loading contract simulator...
+      </div>
     );
   }
 
   if (contractsState.status === "error") {
     return (
-      <Card className="border-rose-300/15 bg-rose-950/25 text-white shadow-[0_24px_90px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
-        <CardHeader>
-          <CardTitle>Simulator unavailable</CardTitle>
-          <CardDescription className="text-rose-100/85">{contractsState.message}</CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="sim-empty-state sim-empty-state--error">
+        {contractsState.message}
+      </div>
     );
   }
 
@@ -71,14 +83,9 @@ export function ContractSimulator() {
 
   if (!contract) {
     return (
-      <Card className="border-rose-300/15 bg-rose-950/25 text-white shadow-[0_24px_90px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
-        <CardHeader>
-          <CardTitle>Contract not found</CardTitle>
-          <CardDescription className="text-rose-100/85">
-            The requested seeded contract is not available in this simulator session.
-          </CardDescription>
-        </CardHeader>
-      </Card>
+      <div className="sim-empty-state sim-empty-state--error">
+        The requested seeded contract is not available in this simulator session.
+      </div>
     );
   }
 
@@ -89,140 +96,171 @@ export function ContractSimulator() {
       ? Math.round((contract.milestonesCompleted / contract.milestonesTotal) * 100)
       : 0;
 
+  const accentGradient = pilotTheme.iconClassName.includes("sky")
+    ? "from-sky-400/10 via-blue-500/5 to-transparent"
+    : pilotTheme.iconClassName.includes("amber")
+      ? "from-amber-400/10 via-orange-500/5 to-transparent"
+      : pilotTheme.iconClassName.includes("emerald")
+        ? "from-emerald-400/10 via-cyan-500/5 to-transparent"
+        : "from-white/5 via-white/[0.02] to-transparent";
+
+  const accentLine = pilotTheme.iconClassName.includes("sky")
+    ? "bg-gradient-to-r from-sky-400 to-blue-500"
+    : pilotTheme.iconClassName.includes("amber")
+      ? "bg-gradient-to-r from-amber-400 to-orange-500"
+      : pilotTheme.iconClassName.includes("emerald")
+        ? "bg-gradient-to-r from-emerald-400 to-cyan-500"
+        : "bg-gradient-to-r from-white/40 to-white/20";
+
   return (
-    <section className="grid gap-5">
-      <Card className="overflow-hidden border-white/10 bg-white/[0.045] shadow-[0_24px_90px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
-        <CardHeader className="relative gap-5 border-b border-white/8 pb-5">
-          <div
-            className={cn(
-              "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-85",
-              pilotTheme.highlightClassName,
-            )}
-          />
-          <div className="relative grid gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-end">
+    <div className="space-y-5">
+      {/* ── CONTRACT HEADER ── */}
+      <section className="sim-contract-header relative overflow-hidden">
+        <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-br", accentGradient)} />
+        <div className={cn("absolute inset-x-0 top-0 h-[2px]", accentLine)} />
+
+        <div className="relative flex flex-wrap items-start justify-between gap-4 p-5">
+          <div className="flex items-start gap-4">
+            <div
+              className={cn(
+                "grid size-12 shrink-0 place-items-center rounded-xl text-sm font-bold tracking-wide",
+                pilotTheme.iconClassName,
+              )}
+            >
+              {pilotMeta.icon}
+            </div>
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge className={pilotTheme.badgeClassName}>{pilotMeta.label}</Badge>
-                <Badge className="border-white/12 bg-white/8 text-white/70">
+                <Badge className={cn("text-[0.6rem]", pilotTheme.badgeClassName)}>{pilotMeta.label}</Badge>
+                <Badge className="border-white/8 bg-white/[0.04] text-[0.6rem] text-slate-400">
                   {contract.statusBadge}
                 </Badge>
               </div>
-              <CardTitle className="mt-4 max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-white md:text-4xl">
-                {pilotMeta.simulatorHeading} for {contract.productName ?? contract.id}
-              </CardTitle>
-              <CardDescription className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                Scenario playback, manual sends, milestone transitions, and live socket feedback all
-                stay scoped to this single seeded contract workspace.
-              </CardDescription>
-            </div>
-
-            <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Contract identity
-              </p>
-              <p className="mt-3 truncate text-lg font-semibold text-white">{contract.id}</p>
-              <p className="mt-2 text-sm text-slate-300">
-                Provider: {contract.providerId ?? "Not configured"}
-              </p>
+              <h2 className="mt-2 text-[1.2rem] font-semibold tracking-tight text-white">
+                {contract.productName ?? contract.id}
+              </h2>
+              <p className="mt-0.5 text-[0.72rem] text-slate-500">{contract.id}</p>
             </div>
           </div>
-        </CardHeader>
 
-        <CardContent className="grid gap-4 pt-5 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Delivery target
+          {/* Event Log Trigger */}
+          <Sheet open={sheetOpen} onOpenChange={handleSheetOpenChange}>
+            <SheetTrigger className="sim-event-trigger group">
+              <Radio className={cn(
+                "size-4 text-slate-400 transition group-hover:text-white",
+                hasNewEvents && "text-emerald-400 animate-pulse",
+              )} />
+              <span className="text-[0.72rem] text-slate-400 transition group-hover:text-white">
+                Events
               </span>
-              <CalendarDays className="text-slate-500" />
-            </div>
-            <p className="mt-4 text-xl font-semibold text-white">
-              {formatDeliveryDate(contract.deliveryDate)}
-            </p>
-          </div>
-
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Provider status
-              </span>
-              <RadioTower className="text-slate-500" />
-            </div>
-            <p className="mt-4 text-xl font-semibold text-white">
-              {contract.providerId ? "Configured" : "Needs credentials"}
-            </p>
-          </div>
-
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Operator mode
-              </span>
-              <Sparkles className="text-slate-500" />
-            </div>
-            <p className="mt-4 text-xl font-semibold text-white">Live simulation</p>
-          </div>
-
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Milestone progress
-              </span>
-              <Workflow className="text-slate-500" />
-            </div>
-            <div className="mt-4">
-              <Progress className={cn("gap-2", pilotTheme.progressClassName)} value={progressRatio}>
-                <span className="text-sm font-medium text-white">Readiness</span>
-                <span className="ml-auto text-sm text-slate-300">
-                  {contract.milestonesCompleted}/{contract.milestonesTotal}
+              {eventCount > 0 && (
+                <span className={cn(
+                  "flex size-5 items-center justify-center rounded-full text-[0.55rem] font-bold tabular-nums",
+                  hasNewEvents
+                    ? "bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-400/30"
+                    : "bg-white/[0.08] text-slate-400",
+                )}>
+                  {eventCount > 99 ? "99+" : eventCount}
                 </span>
-              </Progress>
-            </div>
+              )}
+            </SheetTrigger>
+
+            <SheetContent
+              className="flex w-[420px] flex-col border-white/[0.06] bg-[#0a0f16] p-0 text-white sm:max-w-[420px]"
+              showCloseButton={false}
+              side="right"
+            >
+              <SheetTitle className="sr-only">Event Log</SheetTitle>
+              <EventLogPanel state={eventLogState} />
+            </SheetContent>
+          </Sheet>
+        </div>
+      </section>
+
+      {/* ── QUICK STATS ── */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="sim-stat-card">
+          <div className="flex items-center justify-between">
+            <span className="sim-stat-card__label">Delivery</span>
+            <CalendarDays className="size-4 text-slate-600" />
           </div>
-        </CardContent>
-      </Card>
+          <p className="sim-stat-card__value text-[1.1rem]">
+            {formatDeliveryDate(contract.deliveryDate)}
+          </p>
+        </div>
 
-      <div className="grid gap-5 2xl:grid-cols-[minmax(0,1fr)_360px]">
-        <Tabs
-          className="gap-4"
-          onValueChange={(value) =>
-            startTransition(() => setActiveTab(value as SimulatorTab))
-          }
-          value={activeTab}
-        >
-          <TabsList
-            className="w-full justify-start rounded-[22px] border border-white/10 bg-white/[0.05] p-1"
-            variant="default"
-          >
-            <TabsTrigger className="rounded-[18px] px-4" value="scenarios">
-              Scenarios
-            </TabsTrigger>
-            <TabsTrigger className="rounded-[18px] px-4" value="manual">
-              Manual send
-            </TabsTrigger>
-            <TabsTrigger className="rounded-[18px] px-4" value="milestones">
-              Milestones
-            </TabsTrigger>
-          </TabsList>
+        <div className="sim-stat-card">
+          <div className="flex items-center justify-between">
+            <span className="sim-stat-card__label">Provider</span>
+            <RadioTower className="size-4 text-slate-600" />
+          </div>
+          <p className="sim-stat-card__value text-[1.1rem]">
+            {contract.providerId ? "Configured" : "Needs creds"}
+          </p>
+        </div>
 
-          <TabsContent value="scenarios">
-            <ScenarioRunner contract={contract} onPlaybackSettled={refreshSimulatorData} />
-          </TabsContent>
+        <div className="sim-stat-card">
+          <div className="flex items-center justify-between">
+            <span className="sim-stat-card__label">Mode</span>
+            <Sparkles className="size-4 text-slate-600" />
+          </div>
+          <p className="sim-stat-card__value text-[1.1rem]">Live simulation</p>
+        </div>
 
-          <TabsContent value="manual">
-            <ManualSendForm contract={contract} onSubmitSettled={refreshSimulatorData} />
-          </TabsContent>
-
-          <TabsContent value="milestones">
-            <MilestoneTriggerPanel
-              contract={contract}
-              onSubmissionSettled={refreshSimulatorData}
-            />
-          </TabsContent>
-        </Tabs>
-
-        <EventLogPanel contractId={contract.id} />
+        <div className="sim-stat-card">
+          <div className="flex items-center justify-between">
+            <span className="sim-stat-card__label">Milestones</span>
+            <Workflow className="size-4 text-slate-600" />
+          </div>
+          <div className="mt-2">
+            <Progress className={cn("h-1.5", pilotTheme.progressClassName)} value={progressRatio}>
+              <span className="sr-only">Readiness</span>
+            </Progress>
+            <p className="mt-1.5 text-[0.68rem] tabular-nums text-slate-400">
+              {contract.milestonesCompleted}/{contract.milestonesTotal} ({progressRatio}%)
+            </p>
+          </div>
+        </div>
       </div>
-    </section>
+
+      {/* ── WORKSPACE (full width now) ── */}
+      <Tabs
+        className="gap-4"
+        onValueChange={(value) =>
+          startTransition(() => setActiveTab(value as SimulatorTab))
+        }
+        value={activeTab}
+      >
+        <TabsList
+          className="w-fit rounded-xl border border-white/[0.06] bg-white/[0.03] p-1"
+          variant="default"
+        >
+          <TabsTrigger className="flex-none rounded-lg px-4 text-[0.78rem]" value="scenarios">
+            Scenarios
+          </TabsTrigger>
+          <TabsTrigger className="flex-none rounded-lg px-4 text-[0.78rem]" value="manual">
+            Manual send
+          </TabsTrigger>
+          <TabsTrigger className="flex-none rounded-lg px-4 text-[0.78rem]" value="milestones">
+            Milestones
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="scenarios">
+          <ScenarioRunner contract={contract} onPlaybackSettled={refreshSimulatorData} />
+        </TabsContent>
+
+        <TabsContent value="manual">
+          <ManualSendForm contract={contract} onSubmitSettled={refreshSimulatorData} />
+        </TabsContent>
+
+        <TabsContent value="milestones">
+          <MilestoneTriggerPanel
+            contract={contract}
+            onSubmissionSettled={refreshSimulatorData}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

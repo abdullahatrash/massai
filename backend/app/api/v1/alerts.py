@@ -12,7 +12,7 @@ from sqlalchemy.orm import selectinload
 from app.core.auth import CurrentUser
 from app.core.contracts import contract_public_id, get_contract_by_public_id
 from app.core.database import get_db_session
-from app.core.dependencies import require_roles
+from app.core.dependencies import require_contract_reader
 from app.core.formatting import describe_alert
 from app.core.response import ApiException, success
 from app.models.alert import Alert
@@ -127,7 +127,7 @@ def _get_alert_or_404(contract: Contract, alert_id: str) -> Alert:
 @router.get("")
 async def list_active_alerts(
     contract_id: str,
-    current_user: Annotated[CurrentUser, Depends(require_roles("consumer", "admin"))],
+    current_user: Annotated[CurrentUser, Depends(require_contract_reader())],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> dict[str, object]:
     contract = await get_contract_by_public_id(
@@ -159,7 +159,7 @@ async def list_active_alerts(
 @router.get("/history")
 async def list_alert_history(
     contract_id: str,
-    current_user: Annotated[CurrentUser, Depends(require_roles("consumer", "admin"))],
+    current_user: Annotated[CurrentUser, Depends(require_contract_reader())],
     session: Annotated[AsyncSession, Depends(get_db_session)],
     severity: AlertSeverity | None = None,
     from_date: Annotated[date | None, Query(alias="from")] = None,
@@ -196,7 +196,7 @@ async def list_alert_history(
 async def acknowledge_alert(
     contract_id: str,
     alert_id: str,
-    current_user: Annotated[CurrentUser, Depends(require_roles("consumer", "admin"))],
+    current_user: Annotated[CurrentUser, Depends(require_contract_reader())],
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> dict[str, object]:
     contract = await get_contract_by_public_id(

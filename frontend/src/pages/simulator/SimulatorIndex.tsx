@@ -1,14 +1,7 @@
 import { Link, useOutletContext } from "react-router-dom";
-import { ArrowRight, AudioLines, Boxes, Radar } from "lucide-react";
+import { ArrowRight, AudioLines, Boxes, Gauge, Radar } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
@@ -22,142 +15,175 @@ export function SimulatorIndex() {
   const { connectionState, contractsState } = useOutletContext<SimulatorOutletContext>();
   const contracts = contractsState.status === "success" ? contractsState.contracts : [];
 
+  const pilotCount = new Set(contracts.map((c) => c.pilotType ?? "UNKNOWN")).size;
+  const averageCompletion =
+    contracts.length > 0
+      ? Math.round(
+          contracts.reduce((total, contract) => {
+            if (contract.milestonesTotal === 0) return total;
+            return total + contract.milestonesCompleted / contract.milestonesTotal;
+          }, 0) /
+            contracts.length *
+            100,
+        )
+      : 0;
+
   return (
-    <section className="grid gap-5">
-      <Card className="overflow-hidden border-white/10 bg-white/[0.045] shadow-[0_24px_90px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
-        <CardHeader className="relative gap-5 border-b border-white/8 pb-5">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_85%_15%,rgba(255,255,255,0.18),transparent_28%)] opacity-60" />
-          <div className="relative grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end">
-            <div>
-              <Badge className="border-white/15 bg-white/8 text-white/70">Control room</Badge>
-              <CardTitle className="mt-4 max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-white md:text-4xl">
-                Pick a seeded contract and drop into a dedicated operator deck
-              </CardTitle>
-              <CardDescription className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                Each pilot keeps its own scenario runner, manual update form, milestone tools, and
-                live event stream while staying visually consistent across the simulator.
-              </CardDescription>
-            </div>
+    <div className="space-y-6">
+      {/* ── HERO STRIP ── */}
+      <section className="sim-hero">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[1.4rem] font-semibold tracking-tight text-white">
+            Operations Deck
+          </h2>
+          <p className="max-w-xl text-[0.82rem] leading-relaxed text-slate-400">
+            Test sends, scenario playback, milestone triggers, and live socket
+            telemetry — all inside one controlled operator workspace.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-[0.68rem]">
+          <Badge className="border-amber-400/20 bg-amber-400/8 text-amber-300">
+            Dev only
+          </Badge>
+          <span className="text-slate-500">|</span>
+          <span className="text-slate-400">{connectionState.details}</span>
+        </div>
+      </section>
 
-            <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Backend signal
-              </p>
-              <p className="mt-3 text-lg font-semibold text-white">{connectionState.details}</p>
-              <p className="mt-2 text-sm text-slate-300">
-                Use this page as the staging layer before opening a specific contract workspace.
-              </p>
-            </div>
+      {/* ── STAT CARDS ── */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="sim-stat-card">
+          <div className="flex items-center justify-between">
+            <span className="sim-stat-card__label">Contracts</span>
+            <Boxes className="size-4 text-slate-600" />
           </div>
-        </CardHeader>
+          <p className="sim-stat-card__value">{contracts.length}</p>
+          <p className="sim-stat-card__sub">Seeded & available</p>
+        </div>
 
-        <CardContent className="grid gap-4 pt-5 md:grid-cols-3">
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Seeded contracts
-              </span>
-              <Boxes className="text-slate-500" />
-            </div>
-            <p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white">
-              {contracts.length}
-            </p>
+        <div className="sim-stat-card">
+          <div className="flex items-center justify-between">
+            <span className="sim-stat-card__label">Pilots</span>
+            <Radar className="size-4 text-slate-600" />
           </div>
+          <p className="sim-stat-card__value">{pilotCount}</p>
+          <p className="sim-stat-card__sub">Distinct types</p>
+        </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Live telemetry
-              </span>
-              <AudioLines className="text-slate-500" />
-            </div>
-            <p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white">
-              {contracts.length > 0 ? "Ready" : "Idle"}
-            </p>
+        <div className="sim-stat-card">
+          <div className="flex items-center justify-between">
+            <span className="sim-stat-card__label">Completion</span>
+            <Gauge className="size-4 text-slate-600" />
           </div>
+          <p className="sim-stat-card__value">{averageCompletion}%</p>
+          <p className="sim-stat-card__sub">Milestone average</p>
+        </div>
 
-          <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                Factory posture
-              </span>
-              <Radar className="text-slate-500" />
-            </div>
-            <p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white">
-              {contractsState.status === "success" ? "Online" : "Waiting"}
-            </p>
+        <div className="sim-stat-card">
+          <div className="flex items-center justify-between">
+            <span className="sim-stat-card__label">Telemetry</span>
+            <AudioLines className="size-4 text-slate-600" />
           </div>
-        </CardContent>
-      </Card>
+          <p className="sim-stat-card__value">
+            {contracts.length > 0 ? "Ready" : "Idle"}
+          </p>
+          <p className="sim-stat-card__sub">Live socket feed</p>
+        </div>
+      </div>
 
-      {contractsState.status === "success" ? (
-        <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3">
-          {contracts.map((contract) => {
-            const pilotMeta = getPilotMeta(contract.pilotType);
-            const pilotTheme = getPilotTheme(contract.pilotType);
-            const progressValue =
-              contract.milestonesTotal > 0
-                ? Math.round((contract.milestonesCompleted / contract.milestonesTotal) * 100)
-                : 0;
+      {/* ── CONTRACT GRID ── */}
+      {contractsState.status === "success" && contracts.length > 0 && (
+        <section className="space-y-3">
+          <h3 className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Select a contract
+          </h3>
 
-            return (
-              <Link key={contract.id} to={`/simulator/${contract.id}`}>
-                <Card className="group h-full overflow-hidden border-white/10 bg-white/[0.045] shadow-[0_24px_90px_rgba(0,0,0,0.25)] backdrop-blur-2xl transition duration-200 hover:-translate-y-1 hover:border-white/18 hover:bg-white/[0.07]">
-                  <CardHeader className="relative gap-4 border-b border-white/8 pb-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {contracts.map((contract) => {
+              const pilotMeta = getPilotMeta(contract.pilotType);
+              const pilotTheme = getPilotTheme(contract.pilotType);
+              const progressValue =
+                contract.milestonesTotal > 0
+                  ? Math.round((contract.milestonesCompleted / contract.milestonesTotal) * 100)
+                  : 0;
+
+              return (
+                <Link key={contract.id} to={`/simulator/${contract.id}`}>
+                  <div className="sim-contract-card group">
+                    {/* Accent line */}
                     <div
                       className={cn(
-                        "pointer-events-none absolute inset-0 bg-gradient-to-br opacity-80",
-                        pilotTheme.highlightClassName,
+                        "absolute inset-x-0 top-0 h-[2px] opacity-60 transition-opacity group-hover:opacity-100",
+                        pilotTheme.iconClassName.includes("sky")
+                          ? "bg-gradient-to-r from-sky-400 to-blue-500"
+                          : pilotTheme.iconClassName.includes("amber")
+                            ? "bg-gradient-to-r from-amber-400 to-orange-500"
+                            : pilotTheme.iconClassName.includes("emerald")
+                              ? "bg-gradient-to-r from-emerald-400 to-cyan-500"
+                              : "bg-gradient-to-r from-white/40 to-white/20",
                       )}
                     />
-                    <div className="relative flex items-start gap-3">
-                      <span
+
+                    <div className="flex items-start gap-3">
+                      <div
                         className={cn(
-                          "grid size-14 place-items-center rounded-2xl border text-sm font-semibold tracking-[0.18em]",
+                          "grid size-10 shrink-0 place-items-center rounded-lg text-[0.65rem] font-bold tracking-wide",
                           pilotTheme.iconClassName,
                         )}
                       >
                         {pilotMeta.icon}
-                      </span>
+                      </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <Badge className={pilotTheme.badgeClassName}>{pilotMeta.label}</Badge>
-                          <Badge className="border-white/12 bg-white/8 text-white/70">
+                        <div className="flex items-center gap-2">
+                          <Badge className={cn("text-[0.58rem]", pilotTheme.badgeClassName)}>
+                            {pilotMeta.label}
+                          </Badge>
+                          <Badge className="border-white/8 bg-white/[0.04] text-[0.58rem] text-slate-400">
                             {contract.statusBadge}
                           </Badge>
                         </div>
-                        <CardTitle className="mt-4 truncate text-2xl text-white">
+                        <p className="mt-2 truncate text-[0.88rem] font-semibold text-white">
                           {contract.productName ?? contract.id}
-                        </CardTitle>
-                        <CardDescription className="mt-2 truncate text-slate-300">
-                          {contract.id}
-                        </CardDescription>
+                        </p>
+                        <p className="mt-0.5 truncate text-[0.7rem] text-slate-500">{contract.id}</p>
                       </div>
                     </div>
-                  </CardHeader>
 
-                  <CardContent className="space-y-4 pt-5">
-                    <div className="flex items-center justify-between gap-3 text-sm text-slate-300">
-                      <span>Milestone progression</span>
-                      <span className="font-medium text-white">
-                        {contract.milestonesCompleted}/{contract.milestonesTotal}
-                      </span>
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between text-[0.68rem]">
+                        <span className="text-slate-400">Milestones</span>
+                        <span className="font-medium tabular-nums text-slate-300">
+                          {contract.milestonesCompleted}/{contract.milestonesTotal}
+                        </span>
+                      </div>
+                      <Progress className={cn("h-1.5", pilotTheme.progressClassName)} value={progressValue}>
+                        <span className="sr-only">Readiness</span>
+                      </Progress>
                     </div>
-                    <Progress className={cn("gap-2", pilotTheme.progressClassName)} value={progressValue}>
-                      <span className="text-sm font-medium text-white">Readiness</span>
-                      <span className="ml-auto text-sm text-slate-300">{progressValue}%</span>
-                    </Progress>
-                    <div className="flex items-center justify-between gap-3 rounded-[24px] border border-white/10 bg-slate-950/45 px-4 py-3 text-sm text-slate-300">
-                      <span>Open simulator deck</span>
-                      <ArrowRight className="transition duration-200 group-hover:translate-x-1" />
+
+                    <div className="mt-4 flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 text-[0.72rem] text-slate-400 transition group-hover:border-white/10 group-hover:text-white">
+                      <span>Open workspace</span>
+                      <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
                     </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {contractsState.status === "loading" && (
+        <div className="sim-empty-state">
+          Loading contract data from backend...
         </div>
-      ) : null}
-    </section>
+      )}
+
+      {contractsState.status === "error" && (
+        <div className="sim-empty-state sim-empty-state--error">
+          {contractsState.message}
+        </div>
+      )}
+    </div>
   );
 }

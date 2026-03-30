@@ -1,24 +1,17 @@
 import { startTransition, useEffect, useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Activity,
   ArrowUpRight,
-  Boxes,
+  ChevronLeft,
   LogOut,
-  RadioTower,
   RefreshCcw,
-  ShieldCheck,
+  Zap,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -46,36 +39,39 @@ type ContractsState =
 
 function formatConnectionState(connectionState: ConnectionState) {
   if (connectionState.status === "connected") {
-    return "Connected";
+    return "Online";
   }
 
   if (connectionState.status === "unavailable") {
-    return "Unavailable";
+    return "Offline";
   }
 
   return "Checking";
 }
 
-function getConnectionBadgeClassName(connectionState: ConnectionState) {
+function getConnectionDotClassName(connectionState: ConnectionState) {
   if (connectionState.status === "connected") {
-    return "border-emerald-300/25 bg-emerald-300/12 text-emerald-50";
+    return "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.5)]";
   }
 
   if (connectionState.status === "unavailable") {
-    return "border-rose-300/25 bg-rose-300/12 text-rose-100";
+    return "bg-rose-400 shadow-[0_0_6px_rgba(251,113,133,0.5)]";
   }
 
-  return "border-amber-300/25 bg-amber-300/12 text-amber-50";
+  return "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.5)] animate-pulse";
 }
 
 export function SimulatorLayout() {
   const { logout, user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [connectionState, setConnectionState] = useState<ConnectionState>({
     status: "checking",
     details: "Pinging backend API.",
   });
   const [contractsState, setContractsState] = useState<ContractsState>({ status: "loading" });
   const [requestVersion, setRequestVersion] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -169,229 +165,324 @@ export function SimulatorLayout() {
         )
       : 0;
 
+  const isOnIndex = location.pathname === "/simulator" || location.pathname === "/simulator/";
+
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#08111b] text-white">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(233,153,34,0.16),transparent_22%),radial-gradient(circle_at_80%_16%,rgba(37,186,153,0.16),transparent_24%),linear-gradient(160deg,#04090f_0%,#08111b_48%,#0f1d2b_100%)]" />
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.06)_1px,transparent_1px)] bg-[size:72px_72px] opacity-25 [mask-image:radial-gradient(circle_at_center,black,transparent_78%)]" />
-
-      <div className="relative mx-auto flex max-w-[1600px] flex-col gap-6 px-4 py-4 sm:px-6 lg:px-8">
-        <header>
-          <Card className="overflow-hidden border-white/10 bg-white/[0.045] shadow-[0_24px_100px_rgba(0,0,0,0.35)] backdrop-blur-2xl">
-            <CardHeader className="relative gap-5 border-b border-white/8 pb-5">
-              <div className="pointer-events-none absolute inset-y-0 right-0 w-1/2 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.14),transparent_56%)] opacity-50" />
-              <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1fr)_430px]">
-                <div className="flex flex-wrap items-start justify-between gap-4">
-                  <div className="max-w-3xl">
-                    <Badge className="border-amber-300/25 bg-amber-300/12 text-amber-50">
-                      Factory simulator
-                    </Badge>
-                    <CardTitle className="mt-4 max-w-3xl text-4xl font-semibold tracking-[-0.04em] text-white md:text-5xl">
-                      Operations deck for seeded pilot contracts
-                    </CardTitle>
-                    <CardDescription className="mt-4 max-w-2xl text-base leading-7 text-slate-300">
-                      Keep test sends, scenario playback, milestone triggers, and live socket
-                      telemetry inside one controlled operator workspace.
-                    </CardDescription>
-                  </div>
-
-                  <div className="grid gap-2 text-right text-sm text-slate-300">
-                    <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-500">
-                      Session mode
-                    </span>
-                    <span>Development-only factory-side tooling</span>
-                  </div>
+    <div className={cn("sim-shell", sidebarCollapsed && "sim-shell--collapsed")}>
+      {/* ── SIDEBAR ── */}
+      <aside
+        className={cn(
+          "sim-sidebar",
+          sidebarCollapsed && "sim-sidebar--collapsed",
+        )}
+      >
+        {/* Brand */}
+        <div className="sim-sidebar__brand">
+          {!sidebarCollapsed && (
+            <>
+              <div className="flex items-center gap-2.5">
+                <div className="grid size-8 place-items-center rounded-lg bg-gradient-to-br from-amber-400/20 to-emerald-400/20 ring-1 ring-white/10">
+                  <Zap className="size-4 text-amber-300" />
                 </div>
+                <div>
+                  <p className="text-[0.8rem] font-semibold tracking-tight text-white">MASSAI</p>
+                  <p className="text-[0.6rem] uppercase tracking-[0.18em] text-slate-500">Simulator</p>
+                </div>
+              </div>
+            </>
+          )}
+          {sidebarCollapsed && (
+            <Button
+              className="size-8 bg-gradient-to-br from-amber-400/20 to-emerald-400/20 ring-1 ring-white/10 hover:ring-white/20"
+              onClick={() => setSidebarCollapsed(false)}
+              size="icon"
+              title="Expand sidebar"
+              variant="ghost"
+            >
+              <Zap className="size-4 text-amber-300" />
+            </Button>
+          )}
+          {!sidebarCollapsed && (
+            <Button
+              className="sim-sidebar__toggle"
+              onClick={() => setSidebarCollapsed(true)}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <ChevronLeft className="size-3.5" />
+            </Button>
+          )}
+        </div>
 
-                <div className="grid gap-3 rounded-[30px] border border-white/10 bg-slate-950/45 p-4">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <section className="rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                          API status
-                        </p>
-                        <Badge className={getConnectionBadgeClassName(connectionState)}>
-                          {formatConnectionState(connectionState)}
-                        </Badge>
-                      </div>
-                      <p className="mt-3 text-sm leading-7 text-slate-300">
-                        {connectionState.details}
-                      </p>
-                    </section>
+        {/* Status */}
+        {!sidebarCollapsed && (
+          <div className="sim-sidebar__status">
+            <div className="flex items-center gap-2">
+              <span className={cn("size-2 rounded-full", getConnectionDotClassName(connectionState))} />
+              <span className="text-[0.65rem] font-medium uppercase tracking-[0.16em] text-slate-400">
+                {formatConnectionState(connectionState)}
+              </span>
+            </div>
+            <div className="mt-2 flex items-center gap-3 text-[0.7rem] text-slate-500">
+              <span>{contracts.length} contracts</span>
+              <span className="text-slate-700">|</span>
+              <span>{pilotCount} pilots</span>
+              <span className="text-slate-700">|</span>
+              <span>{averageCompletion}%</span>
+            </div>
+          </div>
+        )}
 
-                    <section className="rounded-[22px] border border-white/10 bg-white/[0.04] p-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                          Operator account
-                        </p>
-                        <ShieldCheck className="text-slate-500" />
-                      </div>
-                      <p className="mt-3 truncate text-sm font-semibold text-white">
-                        {user?.name ?? user?.email ?? "Unknown admin"}
-                      </p>
-                      <p className="mt-1 truncate text-sm text-slate-300">
-                        {user?.email ?? "No email available"}
-                      </p>
-                      <p className="mt-3 truncate rounded-2xl border border-white/10 bg-black/20 px-3 py-2 text-xs text-slate-300">
-                        Roles: {user?.roles.join(", ") || "none"}
-                      </p>
-                    </section>
+        {/* Navigation Label */}
+        {!sidebarCollapsed && (
+          <div className="px-3 pb-1 pt-4">
+            <p className="text-[0.6rem] font-semibold uppercase tracking-[0.22em] text-slate-600">
+              Contracts
+            </p>
+          </div>
+        )}
+
+        {/* Contract List */}
+        <ScrollArea className="sim-sidebar__nav">
+          <nav aria-label="Simulator contracts" className="grid gap-1.5 px-2 py-1">
+            {/* Home link */}
+            <NavLink
+              className={({ isActive }) =>
+                cn(
+                  "sim-nav-item",
+                  isActive && "sim-nav-item--active",
+                )
+              }
+              end
+              to="/simulator"
+            >
+              {sidebarCollapsed ? (
+                <div className="grid size-8 place-items-center rounded-md bg-white/[0.06] text-[0.65rem] font-bold text-slate-300">
+                  <Activity className="size-3.5" />
+                </div>
+              ) : (
+                <>
+                  <div className="grid size-8 place-items-center rounded-md bg-white/[0.06]">
+                    <Activity className="size-3.5 text-slate-400" />
                   </div>
+                  <span className="text-[0.78rem] font-medium text-slate-300">Overview</span>
+                </>
+              )}
+            </NavLink>
 
-                  <div className="flex flex-wrap gap-2">
-                    <Button onClick={context.refreshSimulatorData} type="button" variant="outline">
-                      <RefreshCcw data-icon="inline-start" />
-                      Refresh
-                    </Button>
-                    <Link
-                      className={cn(
-                        buttonVariants({ variant: "ghost" }),
-                        "border border-white/10 bg-white/[0.05] text-white hover:bg-white/[0.09]",
-                      )}
-                      to="/contracts"
+            {/* Contract items */}
+            {contractsState.status === "loading" ? (
+              !sidebarCollapsed ? (
+                <div className="px-2 py-3 text-[0.72rem] text-slate-500">Loading contracts...</div>
+              ) : null
+            ) : null}
+
+            {contractsState.status === "error" ? (
+              !sidebarCollapsed ? (
+                <div className="rounded-lg border border-rose-500/20 bg-rose-500/5 px-2 py-2 text-[0.72rem] text-rose-300">
+                  {contractsState.message}
+                </div>
+              ) : null
+            ) : null}
+
+            {contractsState.status === "success"
+              ? contractsState.contracts.map((contract) => {
+                  const pilotMeta = getPilotMeta(contract.pilotType);
+                  const pilotTheme = getPilotTheme(contract.pilotType);
+                  const progressPct =
+                    contract.milestonesTotal > 0
+                      ? Math.round((contract.milestonesCompleted / contract.milestonesTotal) * 100)
+                      : 0;
+
+                  return (
+                    <NavLink
+                      className={({ isActive }) =>
+                        cn(
+                          "sim-nav-item",
+                          isActive && "sim-nav-item--active",
+                        )
+                      }
+                      key={contract.id}
+                      to={`/simulator/${contract.id}`}
                     >
-                      <ArrowUpRight data-icon="inline-start" />
-                      Consumer dashboard
-                    </Link>
-                    <Button onClick={() => void logout()} type="button" variant="ghost">
-                      <LogOut data-icon="inline-start" />
-                      Logout
-                    </Button>
+                      {sidebarCollapsed ? (
+                        <div
+                          className={cn(
+                            "grid size-8 place-items-center rounded-md text-[0.6rem] font-bold",
+                            pilotTheme.iconClassName,
+                          )}
+                          title={contract.productName ?? contract.id}
+                        >
+                          {pilotMeta.icon}
+                        </div>
+                      ) : (
+                        <>
+                          <div
+                            className={cn(
+                              "grid size-9 shrink-0 place-items-center rounded-lg text-[0.65rem] font-bold tracking-wide",
+                              pilotTheme.iconClassName,
+                            )}
+                          >
+                            {pilotMeta.icon}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-[0.82rem] font-medium text-slate-200">
+                              {contract.productName ?? contract.id}
+                            </p>
+                            <div className="mt-1 flex items-center gap-2">
+                              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.06]">
+                                <div
+                                  className={cn(
+                                    "h-full rounded-full transition-all duration-500",
+                                    pilotTheme.iconClassName.includes("sky")
+                                      ? "bg-sky-400/70"
+                                      : pilotTheme.iconClassName.includes("amber")
+                                        ? "bg-amber-400/70"
+                                        : pilotTheme.iconClassName.includes("emerald")
+                                          ? "bg-emerald-400/70"
+                                          : "bg-white/40",
+                                  )}
+                                  style={{ width: `${progressPct}%` }}
+                                />
+                              </div>
+                              <span className="shrink-0 text-[0.65rem] tabular-nums text-slate-500">
+                                {progressPct}%
+                              </span>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </NavLink>
+                  );
+                })
+              : null}
+          </nav>
+        </ScrollArea>
+
+        {/* Sidebar Footer — User / Roles */}
+        <div className="sim-sidebar__footer">
+          <Popover>
+            <PopoverTrigger
+              className={cn(
+                "flex w-full cursor-pointer items-center gap-2.5 overflow-hidden rounded-lg p-1.5 transition hover:bg-white/[0.06]",
+                sidebarCollapsed && "justify-center",
+              )}
+            >
+              <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-slate-700/60 to-slate-800/60 ring-1 ring-white/10">
+                <span className="text-[0.65rem] font-bold uppercase text-slate-300">
+                  {(user?.name ?? user?.email ?? "A").charAt(0)}
+                </span>
+              </div>
+              {!sidebarCollapsed && (
+                <div className="min-w-0 flex-1 text-left">
+                  <p className="truncate text-[0.76rem] font-medium text-slate-200">
+                    {user?.name ?? user?.email ?? "Admin"}
+                  </p>
+                  <p className="truncate text-[0.62rem] text-slate-500">
+                    {user?.roles.length ? `${user.roles.length} role${user.roles.length > 1 ? "s" : ""}` : "no roles"}
+                  </p>
+                </div>
+              )}
+            </PopoverTrigger>
+            <PopoverContent
+              className="w-64 border border-white/10 bg-[#0f1520] p-0 text-white shadow-xl ring-0"
+              side={sidebarCollapsed ? "right" : "top"}
+              sideOffset={8}
+            >
+              <div className="border-b border-white/[0.06] px-4 py-3">
+                <p className="text-[0.78rem] font-semibold text-white">
+                  {user?.name ?? "Unknown user"}
+                </p>
+                <p className="mt-0.5 truncate text-[0.68rem] text-slate-400">
+                  {user?.email ?? "No email"}
+                </p>
+              </div>
+              <div className="px-4 py-3">
+                <p className="mb-2 text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-slate-500">
+                  Roles
+                </p>
+                {user?.roles.length ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {user.roles.map((role) => (
+                      <Badge
+                        className="border-white/10 bg-white/[0.05] text-[0.65rem] text-slate-300"
+                        key={role}
+                      >
+                        {role}
+                      </Badge>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <p className="text-[0.7rem] text-slate-500">No roles assigned</p>
+                )}
               </div>
-            </CardHeader>
+            </PopoverContent>
+          </Popover>
+        </div>
+      </aside>
 
-            <CardContent className="grid gap-4 pt-5 md:grid-cols-3">
-              <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Contract deck
-                  </span>
-                  <Boxes className="text-slate-500" />
-                </div>
-                <p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white">
-                  {contracts.length}
-                </p>
-                <p className="mt-2 text-sm text-slate-300">Seeded contracts currently available.</p>
-              </div>
+      {/* ── MAIN AREA ── */}
+      <div className="sim-main">
+        {/* ── TOPBAR ── */}
+        <header className="sim-topbar">
+          <div className="flex items-center gap-3">
+            {isOnIndex ? (
+              <h1 className="text-[0.82rem] font-semibold text-white">Operations Deck</h1>
+            ) : (
+              <nav className="flex items-center gap-1.5 text-[0.78rem]">
+                <Button
+                  className="h-auto p-0 text-[0.78rem] text-slate-400 hover:text-white"
+                  onClick={() => void navigate("/simulator")}
+                  variant="link"
+                >
+                  Simulator
+                </Button>
+                <span className="text-slate-600">/</span>
+                <span className="font-medium text-white">Contract</span>
+              </nav>
+            )}
+          </div>
 
-              <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Pilot coverage
-                  </span>
-                  <RadioTower className="text-slate-500" />
-                </div>
-                <p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white">
-                  {pilotCount}
-                </p>
-                <p className="mt-2 text-sm text-slate-300">
-                  Distinct pilot types ready for simulation.
-                </p>
-              </div>
+          <div className="flex items-center gap-1">
+            <div className="mr-1 flex items-center gap-1.5 rounded-md border border-white/[0.06] bg-white/[0.03] px-2.5 py-1.5">
+              <span className={cn("size-1.5 rounded-full", getConnectionDotClassName(connectionState))} />
+              <span className="text-[0.68rem] text-slate-400">{formatConnectionState(connectionState)}</span>
+            </div>
 
-              <div className="rounded-[28px] border border-white/10 bg-white/[0.04] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-slate-400">
-                    Completion avg
-                  </span>
-                  <Activity className="text-slate-500" />
-                </div>
-                <p className="mt-4 text-3xl font-semibold tracking-[-0.04em] text-white">
-                  {averageCompletion}%
-                </p>
-                <p className="mt-2 text-sm text-slate-300">
-                  Snapshot across all seeded contract milestones.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+            <Button
+              className="size-8"
+              onClick={context.refreshSimulatorData}
+              size="icon"
+              title="Refresh"
+              variant="ghost"
+            >
+              <RefreshCcw className="size-3.5" />
+            </Button>
+
+            <Button
+              onClick={() => void navigate("/contracts")}
+              size="sm"
+              variant="ghost"
+            >
+              <ArrowUpRight className="size-3.5" />
+              <span className="hidden sm:inline">Dashboard</span>
+            </Button>
+
+            <Button
+              onClick={() => void logout()}
+              size="sm"
+              variant="ghost"
+            >
+              <LogOut className="size-3.5" />
+              <span className="hidden sm:inline">Logout</span>
+            </Button>
+          </div>
         </header>
 
-        <div className="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-          <aside className="min-h-[60vh]">
-            <Card className="h-full border-white/10 bg-white/[0.045] shadow-[0_24px_90px_rgba(0,0,0,0.3)] backdrop-blur-2xl">
-              <CardHeader className="border-b border-white/8 pb-4">
-                <Badge className="border-white/15 bg-white/8 text-white/70">Seeded contracts</Badge>
-                <CardTitle className="text-2xl text-white">Pilot navigator</CardTitle>
-                <CardDescription className="text-slate-300">
-                  Jump between seeded contracts and keep each operator deck one click away.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-4">
-                {contractsState.status === "loading" ? (
-                  <div className="rounded-[28px] border border-white/10 bg-slate-950/45 p-4 text-sm text-slate-300">
-                    Pulling the seeded contract index from the backend.
-                  </div>
-                ) : null}
-
-                {contractsState.status === "error" ? (
-                  <div className="rounded-[28px] border border-rose-300/15 bg-rose-950/25 p-4 text-sm text-rose-100">
-                    {contractsState.message}
-                  </div>
-                ) : null}
-
-                {contractsState.status === "success" ? (
-                  <ScrollArea className="h-[calc(100vh-29rem)] min-h-[24rem] pr-3">
-                    <nav aria-label="Simulator contracts" className="grid gap-3">
-                      {contractsState.contracts.map((contract) => {
-                        const pilotMeta = getPilotMeta(contract.pilotType);
-                        const pilotTheme = getPilotTheme(contract.pilotType);
-                        const progressText =
-                          contract.milestonesTotal > 0
-                            ? `${contract.milestonesCompleted}/${contract.milestonesTotal}`
-                            : "No milestones";
-
-                        return (
-                          <NavLink
-                            className={({ isActive }) =>
-                              cn(
-                                "group relative overflow-hidden rounded-[28px] border border-white/10 bg-slate-950/45 p-4 text-left transition duration-200 hover:-translate-y-0.5 hover:border-white/18 hover:bg-white/[0.08]",
-                                pilotTheme.panelClassName,
-                                isActive ? "border-white/20 bg-white/[0.12] shadow-[0_24px_50px_rgba(0,0,0,0.28)]" : null,
-                              )
-                            }
-                            key={contract.id}
-                            to={`/simulator/${contract.id}`}
-                          >
-                            <div className={cn("pointer-events-none absolute inset-0 bg-gradient-to-br opacity-80", pilotTheme.highlightClassName)} />
-                            <div className="relative flex items-start gap-3">
-                              <span
-                                className={cn(
-                                  "grid size-12 shrink-0 place-items-center rounded-2xl border text-sm font-semibold tracking-[0.18em]",
-                                  pilotTheme.iconClassName,
-                                )}
-                              >
-                                {pilotMeta.icon}
-                              </span>
-                              <div className="min-w-0 flex-1 space-y-2">
-                                <div className="flex flex-wrap items-center gap-2">
-                                  <p className="truncate text-sm font-semibold text-white">
-                                    {contract.productName ?? contract.id}
-                                  </p>
-                                  <Badge className={pilotTheme.badgeClassName}>{pilotMeta.label}</Badge>
-                                </div>
-                                <p className="truncate text-sm text-slate-300">{contract.id}</p>
-                                <div className="flex items-center justify-between gap-3 text-xs uppercase tracking-[0.22em] text-slate-400">
-                                  <span>{contract.statusBadge}</span>
-                                  <span>{progressText}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </NavLink>
-                        );
-                      })}
-                    </nav>
-                  </ScrollArea>
-                ) : null}
-              </CardContent>
-            </Card>
-          </aside>
-
-          <main className="min-h-[60vh]">
-            <Outlet context={context} />
-          </main>
-        </div>
+        {/* ── CONTENT ── */}
+        <main className="sim-content">
+          <Outlet context={context} />
+        </main>
       </div>
     </div>
   );

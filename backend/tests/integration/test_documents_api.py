@@ -103,6 +103,7 @@ class DocumentsApiIntegrationTestCase(unittest.TestCase):
                             "format": "PDF",
                             "uploadedAt": "2026-03-16T10:00:00Z",
                         },
+                        "https://example.com/docs/legacy-string-only.pdf",
                         {
                             "type": "APPROVAL_NOTE",
                             "notes": "Reviewed.",
@@ -202,6 +203,15 @@ class DocumentsApiIntegrationTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["data"], [])
 
+    def test_contract_documents_ignore_legacy_string_only_evidence(self) -> None:
+        client = TestClient(self.app)
+        response = client.get("/api/v1/contracts/contract-factor-001/documents")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()["data"]
+        self.assertEqual(len(payload), 1)
+        self.assertEqual(payload[0]["name"], "inspection.pdf")
+
     def test_milestone_documents_returns_documents_for_single_milestone(self) -> None:
         client = TestClient(self.app)
         milestone_id = self.factor_contract.milestones[0].id
@@ -231,3 +241,20 @@ class DocumentsApiIntegrationTestCase(unittest.TestCase):
 
         self.assertEqual(response.status_code, 403)
         self.assertEqual(response.json()["error"]["code"], "FORBIDDEN")
+
+    def test_provider_can_view_assigned_contract_documents(self) -> None:
+        async def override_current_user() -> CurrentUser:
+            return CurrentUser(
+                id="provider-1",
+                email="provider-factor@test.com",
+                preferred_username="provider-factor@test.com",
+                roles=("provider",),
+                contract_ids=("contract-factor-001",),
+            )
+
+        self.app.dependency_overrides[get_current_user] = override_current_user
+        client = TestClient(self.app)
+        response = client.get("/api/v1/contracts/contract-factor-001/documents")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()["data"]), 1)

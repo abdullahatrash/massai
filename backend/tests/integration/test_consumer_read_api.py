@@ -87,6 +87,7 @@ def build_contract(
     milestone_defs: list[dict[str, Any]],
     alerts: list[dict[str, Any]] | None = None,
     blockchain_events: list[dict[str, Any]] | None = None,
+    quality_target: float | None = None,
 ) -> Contract:
     today = date.today()
     contract = Contract(id=uuid.uuid4())
@@ -96,6 +97,8 @@ def build_contract(
     contract.pilot_type = pilot_type
     contract.product_name = public_id
     contract.config = {"public_id": public_id}
+    if quality_target is not None:
+        contract.config["quality_target"] = quality_target
 
     milestones: list[Milestone] = []
     for milestone_def in milestone_defs:
@@ -107,6 +110,7 @@ def build_contract(
         milestone.actual_date = milestone_def.get("actual_date")
         milestone.status = milestone_def["status"]
         milestone.approval_required = milestone_def.get("approval_required", False)
+        milestone.completion_criteria = dict(milestone_def.get("completion_criteria", {}))
         milestone.evidence = list(milestone_def.get("evidence", []))
         milestones.append(milestone)
     contract.milestones = milestones
@@ -149,6 +153,7 @@ class ConsumerReadApiIntegrationTestCase(unittest.TestCase):
                     "name": "Heat Treatment",
                     "planned_offset_days": 12,
                     "status": "PENDING",
+                    "completion_criteria": {"minQualityPassRate": 0.98},
                 },
                 {
                     "ref": "TURNING",
@@ -156,6 +161,7 @@ class ConsumerReadApiIntegrationTestCase(unittest.TestCase):
                     "planned_offset_days": 3,
                     "status": "COMPLETED",
                     "actual_date": date.today() - timedelta(days=1),
+                    "completion_criteria": {"minQualityPassRate": 0.97},
                     "evidence": [{"type": "REPORT", "url": "https://example.com/report"}],
                 },
                 {
@@ -163,8 +169,10 @@ class ConsumerReadApiIntegrationTestCase(unittest.TestCase):
                     "name": "Grinding",
                     "planned_offset_days": -1,
                     "status": "PENDING",
+                    "completion_criteria": {"minQualityPassRate": 0.985},
                 },
             ],
+            quality_target=0.985,
             alerts=[
                 {
                     "severity": "HIGH",
@@ -220,6 +228,10 @@ class ConsumerReadApiIntegrationTestCase(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         payload = response.json()["data"]
         self.assertEqual([item["milestoneRef"] for item in payload], ["GRIND", "TURNING", "HEAT"])
+        self.assertEqual(
+            {item["milestoneRef"]: item["qualityGate"] for item in payload},
+            {"GRIND": 0.985, "TURNING": 0.97, "HEAT": 0.98},
+        )
 
     def test_e4m_milestones_expose_expected_approval_required_flags(self) -> None:
         client = TestClient(self.app)
@@ -238,6 +250,7 @@ class ConsumerReadApiIntegrationTestCase(unittest.TestCase):
                 "M6": True,
             },
         )
+        self.assertTrue(all(item["qualityGate"] is None for item in response.json()["data"]))
 
     def test_milestone_detail_includes_evidence_array(self) -> None:
         client = TestClient(self.app)
@@ -250,6 +263,21 @@ class ConsumerReadApiIntegrationTestCase(unittest.TestCase):
         payload = response.json()["data"]
         self.assertIn("evidence", payload)
         self.assertEqual(payload["evidence"], [])
+        self.assertEqual(payload["qualityGate"], 0.98)
+
+    def test_milestone_detail_preserves_structured_evidence_entries(self) -> None:
+        client = TestClient(self.app)
+        milestone_id = self.factor_contract.milestones[1].id
+        response = client.get(
+            f"/api/v1/contracts/contract-factor-001/milestones/{milestone_id}"
+        )
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()["data"]
+        self.assertEqual(
+            payload["evidence"],
+            [{"type": "REPORT", "url": "https://example.com/report"}],
+        )
 
     def test_overdue_milestones_are_flagged(self) -> None:
         client = TestClient(self.app)

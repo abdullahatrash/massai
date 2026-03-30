@@ -161,6 +161,7 @@ def build_contract(
     status: str = "ACTIVE",
     alert_severities: list[str] | None = None,
     notification_defs: list[dict[str, Any]] | None = None,
+    quality_target: float | None = None,
 ) -> Contract:
     today = date.today()
     contract = Contract(id=uuid.uuid4())
@@ -175,6 +176,8 @@ def build_contract(
         "public_id": public_id,
         "last_known_state": last_known_state,
     }
+    if quality_target is not None:
+        contract.config["quality_target"] = quality_target
 
     milestones: list[Milestone] = []
     for milestone_def in milestone_defs:
@@ -228,6 +231,7 @@ class ContractsApiIntegrationTestCase(unittest.TestCase):
                 {"ref": "HEAT", "name": "Heat Treatment", "planned_offset_days": 10, "status": "PENDING"},
             ],
             last_known_state={"currentStage": "TURNING", "qualityPassRate": 0.991},
+            quality_target=0.985,
         )
         self.e4m_contract = build_contract(
             "contract-e4m-001",
@@ -334,6 +338,30 @@ class ContractsApiIntegrationTestCase(unittest.TestCase):
         self.assertFalse(pagination["hasMore"])
         self.assertEqual(payload["meta"]["unreadNotifications"], 1)
 
+    def test_provider_can_list_and_view_assigned_contracts(self) -> None:
+        async def override_current_user() -> CurrentUser:
+            return CurrentUser(
+                id="provider-1",
+                email="provider-contract-e4m-001@test.com",
+                preferred_username="provider-contract-e4m-001@test.com",
+                roles=("provider",),
+                contract_ids=("contract-e4m-001",),
+            )
+
+        self.app.dependency_overrides[get_current_user] = override_current_user
+        client = TestClient(self.app)
+
+        list_response = client.get("/api/v1/contracts")
+        overview_response = client.get("/api/v1/contracts/contract-e4m-001")
+
+        self.assertEqual(list_response.status_code, 200)
+        self.assertEqual(overview_response.status_code, 200)
+        self.assertEqual(
+            [item["id"] for item in list_response.json()["data"]],
+            ["contract-e4m-001"],
+        )
+        self.assertEqual(overview_response.json()["data"]["id"], "contract-e4m-001")
+
     def test_get_contract_overview_includes_next_milestone_and_last_known_state(self) -> None:
         client = TestClient(self.app)
         response = client.get("/api/v1/contracts/contract-e4m-001")
@@ -347,7 +375,16 @@ class ContractsApiIntegrationTestCase(unittest.TestCase):
         self.assertEqual(payload["lastKnownState"]["currentPhase"], "M2")
         self.assertEqual(payload["nextMilestone"]["name"], "M2")
         self.assertEqual(payload["nextMilestone"]["plannedDate"], self.e4m_contract.milestones[1].planned_date.isoformat())
+        self.assertIsNone(payload["qualityTarget"])
         self.assertNotIn("blockchain_contract_address", payload)
+
+    def test_get_factor_contract_overview_includes_quality_target(self) -> None:
+        client = TestClient(self.app)
+        response = client.get("/api/v1/contracts/contract-factor-001")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()["data"]
+        self.assertEqual(payload["qualityTarget"], 0.985)
 
     def test_get_contract_overview_reflects_updated_milestone_completion_after_approval(self) -> None:
         client = TestClient(self.app)

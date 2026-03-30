@@ -42,26 +42,41 @@ export function TasowheelMetrics({
   const stepStatus = asString(state.stepStatus);
   const currentEfficiency = efficiencyHistory.at(-1) ?? null;
 
+  const completedCount = milestones.filter((m) => {
+    const stepNumber = milestoneStepNumber(m);
+    return (
+      (m.status ?? "").toUpperCase() === "COMPLETED" ||
+      (stepNumber !== null &&
+        routingStep !== null &&
+        (routingStep > stepNumber ||
+          (routingStep === stepNumber && stepStatus === "COMPLETE")))
+    );
+  }).length;
+
   return (
-    <div className="pilot-metrics-stack">
-      <div className="feed-stat-grid">
-        <article className="feed-stat-card">
-          <span>Current routing step</span>
-          <strong>
+    <div className="pilot-metrics-stack" role="region" aria-label="Tasowheel pilot metrics">
+      <div className="feed-stat-grid" role="list" aria-label="Key metrics">
+        <article className="feed-stat-card" role="listitem">
+          <span id="tw-step-label">Current routing step</span>
+          <strong aria-labelledby="tw-step-label">
             {routingStep !== null ? `Step ${routingStep}` : "Unavailable"}
           </strong>
           <p>{stepName ?? "Latest routing stage unavailable"}</p>
         </article>
 
-        <article className="feed-stat-card">
-          <span>Total energy</span>
-          <strong>{formatNumber(analytics?.totalEnergyKwh ?? null, " kWh")}</strong>
+        <article className="feed-stat-card" role="listitem">
+          <span id="tw-energy-label">Total energy</span>
+          <strong aria-labelledby="tw-energy-label">
+            {formatNumber(analytics?.totalEnergyKwh ?? null, " kWh")}
+          </strong>
           <p>Running total from production updates.</p>
         </article>
 
-        <article className="feed-stat-card">
-          <span>Total carbon</span>
-          <strong>{formatNumber(analytics?.totalCarbonKgCo2e ?? null, " kgCO2e")}</strong>
+        <article className="feed-stat-card" role="listitem">
+          <span id="tw-carbon-label">Total carbon</span>
+          <strong aria-labelledby="tw-carbon-label">
+            {formatNumber(analytics?.totalCarbonKgCo2e ?? null, " kgCO₂e")}
+          </strong>
           <p>Accumulated carbon output for this routing run.</p>
         </article>
 
@@ -73,15 +88,21 @@ export function TasowheelMetrics({
         />
       </div>
 
-      <section className="content-card feed-checklist-card">
+      <section
+        className="content-card feed-checklist-card"
+        aria-labelledby="tw-checklist-heading"
+      >
         <div className="section-header">
           <div>
-            <span className="eyebrow">Routing checklist</span>
-            <h3>Step completion</h3>
+            <span className="eyebrow" aria-hidden="true">Routing checklist</span>
+            <h3 id="tw-checklist-heading">
+              Step completion
+              <span className="sr-only"> — {completedCount} of {milestones.length} steps complete</span>
+            </h3>
           </div>
         </div>
 
-        <div className="feed-checklist">
+        <div className="feed-checklist" role="list" aria-label="Routing steps">
           {milestones.map((milestone) => {
             const stepNumber = milestoneStepNumber(milestone);
             const isComplete =
@@ -92,8 +113,13 @@ export function TasowheelMetrics({
                   (routingStep === stepNumber && stepStatus === "COMPLETE")));
 
             return (
-              <div className={`feed-checklist-item${isComplete ? " complete" : ""}`} key={milestone.id}>
-                <span>{isComplete ? "✓" : "○"}</span>
+              <div
+                className={`feed-checklist-item${isComplete ? " complete" : ""}`}
+                key={milestone.id}
+                role="listitem"
+                aria-label={`${milestone.name}: ${isComplete ? "completed" : "pending"}`}
+              >
+                <span aria-hidden="true">{isComplete ? "✓" : "○"}</span>
                 <div>
                   <strong>{milestone.name}</strong>
                   <p>{milestone.milestoneRef}</p>

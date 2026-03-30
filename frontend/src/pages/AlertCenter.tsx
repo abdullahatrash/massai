@@ -142,12 +142,16 @@ export function AlertCenter() {
   const activeCount = activeAlertsQuery.data?.length ?? 0;
 
   return (
-    <section className="page-stack">
-      <div className="content-card alert-center-card">
+    <section className="page-stack" aria-label="Alert center">
+      <div className="content-card alert-center-card" role="region" aria-labelledby="active-alerts-heading">
         <div className="section-header">
           <div>
-            <span className="eyebrow">Alerts</span>
-            <h3>Alert center ({activeCount})</h3>
+            <span className="eyebrow" aria-hidden="true">Alerts</span>
+            <h3 id="active-alerts-heading">
+              Active alerts
+              <span className="sr-only"> — </span>
+              <span aria-live="polite" aria-atomic="true"> ({activeCount})</span>
+            </h3>
           </div>
         </div>
 
@@ -156,24 +160,26 @@ export function AlertCenter() {
           history for this contract.
         </p>
 
-        {activeAlertsQuery.isPending ? <p>Loading active alerts.</p> : null}
+        {activeAlertsQuery.isPending ? (
+          <p role="status" aria-live="polite">Loading active alerts.</p>
+        ) : null}
 
         {activeAlertsQuery.isError ? (
-          <div className="content-card error-card">
+          <div className="content-card error-card" role="alert">
             <h3>Unable to load active alerts</h3>
             <p>{activeAlertsQuery.error.message}</p>
           </div>
         ) : null}
 
         {activeAlertsQuery.isSuccess && activeAlertsQuery.data.length === 0 ? (
-          <div className="alert-empty-state">
+          <div className="alert-empty-state" role="status">
             <strong>No active alerts</strong>
             <p>Production is on track.</p>
           </div>
         ) : null}
 
         {activeAlertsQuery.isSuccess && activeAlertsQuery.data.length > 0 ? (
-          <div className="alert-list">
+          <div className="alert-list" role="list" aria-label={`${activeCount} active alerts`}>
             {activeAlertsQuery.data.map((alert) => (
               <AlertItem
                 alert={alert}
@@ -189,18 +195,19 @@ export function AlertCenter() {
         ) : null}
       </div>
 
-      <div className="content-card alert-history-card">
+      <div className="content-card alert-history-card" role="region" aria-labelledby="alert-history-heading">
         <div className="section-header">
           <div>
-            <span className="eyebrow">History</span>
-            <h3>Alert history</h3>
+            <span className="eyebrow" aria-hidden="true">History</span>
+            <h3 id="alert-history-heading">Alert history</h3>
           </div>
         </div>
 
-        <div className="alert-filter-grid">
+        <fieldset className="alert-filter-grid" aria-label="Filter alert history">
           <label className="alert-filter-field">
-            <span>Severity</span>
+            <span id="filter-severity-label">Severity</span>
             <select
+              aria-labelledby="filter-severity-label"
               onChange={(event) => {
                 const nextSeverity = event.target.value as HistoryFilters["severity"];
                 startTransition(() => {
@@ -218,8 +225,9 @@ export function AlertCenter() {
           </label>
 
           <label className="alert-filter-field">
-            <span>From</span>
+            <span id="filter-from-label">From</span>
             <input
+              aria-labelledby="filter-from-label"
               onChange={(event) => {
                 const nextValue = event.target.value;
                 startTransition(() => {
@@ -232,8 +240,9 @@ export function AlertCenter() {
           </label>
 
           <label className="alert-filter-field">
-            <span>To</span>
+            <span id="filter-to-label">To</span>
             <input
+              aria-labelledby="filter-to-label"
               onChange={(event) => {
                 const nextValue = event.target.value;
                 startTransition(() => {
@@ -244,22 +253,25 @@ export function AlertCenter() {
               value={filters.to}
             />
           </label>
-        </div>
+        </fieldset>
 
-        {historyAlertsQuery.isPending ? <p>Loading alert history.</p> : null}
+        {historyAlertsQuery.isPending ? (
+          <p role="status" aria-live="polite">Loading alert history.</p>
+        ) : null}
+
         {historyAlertsQuery.isError ? (
-          <div className="content-card error-card">
+          <div className="content-card error-card" role="alert">
             <h3>Unable to load alert history</h3>
             <p>{historyAlertsQuery.error.message}</p>
           </div>
         ) : null}
 
         {historyAlertsQuery.isSuccess && historyAlertsQuery.data.length === 0 ? (
-          <p>No historical alerts match the current filters.</p>
+          <p role="status">No historical alerts match the current filters.</p>
         ) : null}
 
         {historyAlertsQuery.isSuccess && historyAlertsQuery.data.length > 0 ? (
-          <div className="alert-list">
+          <div className="alert-list" role="list" aria-label="Alert history results">
             {historyAlertsQuery.data.map((alert) => (
               <AlertItem alert={alert} key={alert.id} />
             ))}
