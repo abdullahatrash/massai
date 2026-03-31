@@ -161,6 +161,11 @@ function buildIngestUrl(contractId: string) {
   return `${apiBaseUrl}/api/v1/ingest/${contractId}`;
 }
 
+function buildIngestUrlV2(contractId: string) {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+  return `${apiBaseUrl}/api/v2/ingest/${contractId}`;
+}
+
 function delay(durationMs: number, signal: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
     if (signal.aborted) {
@@ -267,6 +272,43 @@ async function postScenarioUpdate(
   };
 }
 
+async function postScenarioUpdateV2(
+  contractId: string,
+  accessToken: string,
+  body: Record<string, unknown>,
+  signal: AbortSignal,
+): Promise<SubmitSimulatorUpdateResult> {
+  const response = await fetch(buildIngestUrlV2(contractId), {
+    body: JSON.stringify(body),
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    method: "POST",
+    signal,
+  });
+  const payload = (await response.json()) as
+    | { data?: IngestSuccessPayload; detail?: string; error?: { message?: string } }
+    | string;
+
+  if (!response.ok) {
+    const message =
+      typeof payload === "string"
+        ? payload
+        : payload.error?.message ?? payload.detail ?? "Scenario step failed.";
+    throw new ApiError(message, response.status, payload);
+  }
+
+  if (!payload || typeof payload !== "object" || !payload.data) {
+    throw new Error("Ingest response was missing its data payload.");
+  }
+
+  return {
+    response: payload.data,
+    status: response.status,
+  };
+}
+
 export async function runScenarioPlayback({
   contractId,
   onStepStart,
@@ -343,6 +385,17 @@ export async function submitSimulatorUpdate(
   const tokenProvider = getProviderTokenProvider(providerClient);
   const accessToken = await tokenProvider.getAccessToken(signal);
   return postScenarioUpdate(contractId, accessToken, body, signal);
+}
+
+export async function submitSimulatorUpdateV2(
+  contractId: string,
+  providerClient: ProviderClientConfig,
+  body: Record<string, unknown>,
+  signal: AbortSignal,
+) {
+  const tokenProvider = getProviderTokenProvider(providerClient);
+  const accessToken = await tokenProvider.getAccessToken(signal);
+  return postScenarioUpdateV2(contractId, accessToken, body, signal);
 }
 
 export async function fetchSimulatorAlerts(contractId: string, signal: AbortSignal) {

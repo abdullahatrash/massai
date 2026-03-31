@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, String, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -20,6 +20,9 @@ class StatusUpdate(UUIDPrimaryKeyMixin, Base):
     )
     update_type: Mapped[str | None] = mapped_column(String)
     sensor_id: Mapped[str | None] = mapped_column(String)
+    source_id: Mapped[str | None] = mapped_column(String)
+    ingest_schema_version: Mapped[str | None] = mapped_column(String)
+    ingest_profile_version: Mapped[int | None] = mapped_column(Integer)
     timestamp: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     payload: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     evidence: Mapped[list[Any] | None] = mapped_column(

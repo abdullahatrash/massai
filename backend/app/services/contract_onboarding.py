@@ -13,6 +13,7 @@ from app.core.response import ApiException
 from app.models.contract import Contract
 from app.models.milestone import Milestone
 from app.schemas.admin import AdminContractResponse
+from app.services.ingest_profiles import IngestProfileService
 
 _ADDRESS_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
 
@@ -124,6 +125,7 @@ class ContractOnboardingService:
             }
         )
         contract.config = config
+        IngestProfileService.bind_default_profile(contract)
 
         existing_milestones = {
             milestone.milestone_ref: milestone

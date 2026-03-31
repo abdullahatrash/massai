@@ -13,6 +13,7 @@ from sqlalchemy import select
 from app.core.database import SessionLocal
 from app.models.contract import Contract
 from app.models.milestone import Milestone
+from app.services.ingest_profiles import IngestProfileService
 
 DATA_DIR = Path(__file__).resolve().parent / "data"
 SEED_NAMESPACE = uuid.UUID("2c72f8dc-f2fb-4f97-bbf5-e8c556d7c8f0")
@@ -93,6 +94,7 @@ async def _upsert_contract(seed: ContractSeed, *, now: datetime, today: date) ->
         contract.delivery_date = _planned_date(seed["delivery_in_days"], today=today)
         contract.activated_at = _activated_at(seed["activated_days_ago"], now=now)
         contract.config = dict(seed["config"])
+        IngestProfileService.bind_default_profile(contract)
 
         for milestone_seed in seed["milestones"]:
             seed_milestone_id = milestone_uuid(seed_id, milestone_seed["milestone_ref"])

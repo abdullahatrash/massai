@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import uuid
 from datetime import date, datetime
 from typing import Any
 
-from sqlalchemy import Date, DateTime, Integer, String, text
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, String, text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, UUIDPrimaryKeyMixin
@@ -23,6 +24,13 @@ class Contract(UUIDPrimaryKeyMixin, Base):
     product_name: Mapped[str | None] = mapped_column(String)
     quantity_total: Mapped[int | None] = mapped_column(Integer)
     delivery_date: Mapped[date | None] = mapped_column(Date)
+    ingest_profile_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("ingest_profiles.id"),
+    )
+    ingest_profile_key: Mapped[str | None] = mapped_column(String)
+    ingest_profile_version: Mapped[int | None] = mapped_column(Integer)
+    ingest_profile_snapshot: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     created_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         server_default=text("now()"),
@@ -37,3 +45,4 @@ class Contract(UUIDPrimaryKeyMixin, Base):
         back_populates="contract"
     )
     notifications: Mapped[list["Notification"]] = relationship(back_populates="contract")
+    ingest_profile: Mapped["IngestProfile | None"] = relationship(back_populates="contracts")
