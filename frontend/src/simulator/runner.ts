@@ -68,7 +68,10 @@ export type SubmitSimulatorUpdateResult = {
 
 type RunnerOptions = {
   contractId: string;
+  pauseController?: PauseController;
+  profileVersion?: number;
   providerClient: ProviderClientConfig;
+  quantityOverride?: number;
   scenario: ScenarioDefinition;
   signal: AbortSignal;
   speedMultiplier: number;
@@ -156,25 +159,68 @@ function buildTokenUrl() {
   return `${keycloakBaseUrl}/realms/${realm}/protocol/openid-connect/token`;
 }
 
-function buildIngestUrl(contractId: string) {
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
-  return `${apiBaseUrl}/api/v1/ingest/${contractId}`;
-}
-
 function buildIngestUrlV2(contractId: string) {
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
   return `${apiBaseUrl}/api/v2/ingest/${contractId}`;
 }
 
-function delay(durationMs: number, signal: AbortSignal) {
+export class PauseController {
+  private _paused = false;
+  private _resumeResolve: (() => void) | null = null;
+
+  get isPaused() {
+    return this._paused;
+  }
+
+  pause() {
+    this._paused = true;
+  }
+
+  resume() {
+    this._paused = false;
+    if (this._resumeResolve) {
+      this._resumeResolve();
+      this._resumeResolve = null;
+    }
+  }
+
+  waitIfPaused(signal: AbortSignal): Promise<void> {
+    if (!this._paused) return Promise.resolve();
+
+    return new Promise<void>((resolve, reject) => {
+      if (signal.aborted) {
+        reject(new DOMException("Playback stopped.", "AbortError"));
+        return;
+      }
+
+      this._resumeResolve = resolve;
+
+      const handleAbort = () => {
+        this._resumeResolve = null;
+        reject(new DOMException("Playback stopped.", "AbortError"));
+      };
+      signal.addEventListener("abort", handleAbort, { once: true });
+    });
+  }
+}
+
+function delay(durationMs: number, signal: AbortSignal, pauseController?: PauseController) {
   return new Promise<void>((resolve, reject) => {
     if (signal.aborted) {
       reject(new DOMException("Playback stopped.", "AbortError"));
       return;
     }
 
-    const timeoutId = window.setTimeout(() => {
+    const timeoutId = window.setTimeout(async () => {
       cleanup();
+      if (pauseController) {
+        try {
+          await pauseController.waitIfPaused(signal);
+        } catch (err) {
+          reject(err);
+          return;
+        }
+      }
       resolve();
     }, Math.max(0, durationMs));
 
@@ -210,10 +256,17 @@ function buildStepPayload(
   scenario: ScenarioDefinition,
   stepIndex: number,
   contractId: string,
+  profileVersion?: number,
+  quantityOverride?: number,
 ) {
   const state = { ...scenario.initialPayload };
   for (let currentIndex = 0; currentIndex <= stepIndex; currentIndex += 1) {
     Object.assign(state, scenario.steps[currentIndex]?.payload ?? {});
+  }
+
+  // Override quantityPlanned with the contract's actual quantity_total
+  if (quantityOverride != null && "quantityPlanned" in state) {
+    state.quantityPlanned = quantityOverride;
   }
 
   const rawEvidence = scenario.steps[stepIndex]?.evidence ?? [];
@@ -229,46 +282,10 @@ function buildStepPayload(
   return {
     evidence,
     payload: state,
-    sensorId: `${contractId}-simulator`,
+    sourceId: `${contractId}-simulator`,
     timestamp: new Date().toISOString(),
     updateType: scenario.steps[stepIndex]?.updateType,
-  };
-}
-
-async function postScenarioUpdate(
-  contractId: string,
-  accessToken: string,
-  body: Record<string, unknown>,
-  signal: AbortSignal,
-): Promise<SubmitSimulatorUpdateResult> {
-  const response = await fetch(buildIngestUrl(contractId), {
-    body: JSON.stringify(body),
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    method: "POST",
-    signal,
-  });
-  const payload = (await response.json()) as
-    | { data?: IngestSuccessPayload; detail?: string; error?: { message?: string } }
-    | string;
-
-  if (!response.ok) {
-    const message =
-      typeof payload === "string"
-        ? payload
-        : payload.error?.message ?? payload.detail ?? "Scenario step failed.";
-    throw new ApiError(message, response.status, payload);
-  }
-
-  if (!payload || typeof payload !== "object" || !payload.data) {
-    throw new Error("Ingest response was missing its data payload.");
-  }
-
-  return {
-    response: payload.data,
-    status: response.status,
+    ...(profileVersion != null ? { profileVersion } : {}),
   };
 }
 
@@ -313,7 +330,10 @@ export async function runScenarioPlayback({
   contractId,
   onStepStart,
   onStepSuccess,
+  pauseController,
+  profileVersion,
   providerClient,
+  quantityOverride,
   scenario,
   signal,
   speedMultiplier,
@@ -325,9 +345,12 @@ export async function runScenarioPlayback({
     if (signal.aborted) {
       throw new DOMException("Playback stopped.", "AbortError");
     }
+    if (pauseController) {
+      await pauseController.waitIfPaused(signal);
+    }
 
     const step = scenario.steps[index];
-    const payload = buildStepPayload(scenario, index, contractId);
+    const payload = buildStepPayload(scenario, index, contractId, profileVersion, quantityOverride);
     onStepStart({
       currentStep: index + 1,
       payload,
@@ -336,7 +359,7 @@ export async function runScenarioPlayback({
     });
 
     const accessToken = await tokenProvider.getAccessToken(signal);
-    const { response } = await postScenarioUpdate(contractId, accessToken, payload, signal);
+    const { response } = await postScenarioUpdateV2(contractId, accessToken, payload, signal);
     const currentAlerts = await fetchAlerts(contractId, signal);
     const alertDetails = diffAlerts(knownAlerts, currentAlerts);
     knownAlerts = currentAlerts;
@@ -355,7 +378,29 @@ export async function runScenarioPlayback({
     });
 
     if (index < scenario.steps.length - 1) {
-      await delay(step.delayMs / Math.max(speedMultiplier, 1), signal);
+      await delay(step.delayMs / Math.max(speedMultiplier, 1), signal, pauseController);
+    }
+  }
+}
+
+type ContinuousRunnerOptions = RunnerOptions & {
+  onCycleComplete: (cycleNumber: number) => void;
+};
+
+export async function runContinuousPlayback({
+  onCycleComplete,
+  ...options
+}: ContinuousRunnerOptions) {
+  let cycle = 0;
+
+  while (!options.signal.aborted) {
+    await runScenarioPlayback(options);
+    cycle += 1;
+    onCycleComplete(cycle);
+
+    // Brief pause between cycles
+    if (!options.signal.aborted) {
+      await delay(1000 / Math.max(options.speedMultiplier, 1), options.signal);
     }
   }
 }
@@ -374,17 +419,6 @@ function getProviderTokenProvider(providerClient: ProviderClientConfig) {
   const nextProvider = new ProviderTokenProvider(providerClient);
   providerTokenProviders.set(cacheKey, nextProvider);
   return nextProvider;
-}
-
-export async function submitSimulatorUpdate(
-  contractId: string,
-  providerClient: ProviderClientConfig,
-  body: Record<string, unknown>,
-  signal: AbortSignal,
-) {
-  const tokenProvider = getProviderTokenProvider(providerClient);
-  const accessToken = await tokenProvider.getAccessToken(signal);
-  return postScenarioUpdate(contractId, accessToken, body, signal);
 }
 
 export async function submitSimulatorUpdateV2(

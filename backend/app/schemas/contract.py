@@ -24,6 +24,7 @@ class ContractListItemResponse(BaseModel):
     product_name: str | None = Field(alias="productName")
     provider_id: str | None = Field(alias="providerId")
     delivery_date: date | None = Field(alias="deliveryDate")
+    quantity_total: int | None = Field(default=None, alias="quantityTotal")
     milestones_completed: int = Field(alias="milestonesCompleted")
     milestones_total: int = Field(alias="milestonesTotal")
 

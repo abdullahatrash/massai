@@ -12,11 +12,12 @@ import {
 } from "@/components/DocumentReferenceEditor";
 
 import { apiRequest, ApiError } from "../../api/client";
+import { fetchContractIngestSpec } from "../../api/ingestSpec";
 import {
   fetchSimulatorMilestones,
   formatRunnerError,
   getProviderClientConfig,
-  submitSimulatorUpdate,
+  submitSimulatorUpdateV2,
   type SimulatorMilestoneSummary,
 } from "../../simulator/runner";
 import type { SimulatorContract } from "./simulatorShared";
@@ -139,6 +140,15 @@ export function MilestoneTriggerPanel({
   const [documentErrorsByMilestoneId, setDocumentErrorsByMilestoneId] = useState<
     Record<string, DocumentReferenceDraftErrors>
   >({});
+  const [profileVersion, setProfileVersion] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchContractIngestSpec(contract.id, controller.signal)
+      .then((spec) => setProfileVersion(spec.profileVersion))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [contract.id]);
 
   useEffect(() => {
     let isActive = true;
@@ -257,15 +267,16 @@ export function MilestoneTriggerPanel({
     });
 
     try {
-      await submitSimulatorUpdate(
+      await submitSimulatorUpdateV2(
         contract.id,
         providerClient,
         {
           evidence: serializedEvidence.documents,
           payload: buildMilestonePayload(contract, milestone, lastKnownState),
-          sensorId: `${contract.id}-milestone-trigger`,
+          sourceId: `${contract.id}-milestone-trigger`,
           timestamp: new Date().toISOString(),
           updateType: "MILESTONE_COMPLETE",
+          ...(profileVersion != null ? { profileVersion } : {}),
         },
         controller.signal,
       );

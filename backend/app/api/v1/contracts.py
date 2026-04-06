@@ -126,6 +126,7 @@ def _serialize_contract_list_item(contract: Contract, *, today: date) -> dict[st
         productName=contract.product_name,
         providerId=contract.provider_id,
         deliveryDate=contract.delivery_date,
+        quantityTotal=contract.quantity_total,
         milestonesCompleted=_completed_milestones(milestones),
         milestonesTotal=len(milestones),
     )

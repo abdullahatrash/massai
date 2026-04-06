@@ -188,7 +188,43 @@ services:
       backend:
         condition: service_healthy
 
+  simulator-studio:
+    build:
+      context: .
+      dockerfile: simulator-studio/Dockerfile
+    container_name: massai-simulator-studio
+    working_dir: /workspace/simulator-studio
+    environment:
+      SIM_STUDIO_DB_PATH: /data/simulator-studio.db
+      MASSAI_API_BASE_URL: http://backend:8000
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-massai}
+      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      MASSAI_OIDC_CLIENT_ID: massai-frontend
+      MASSAI_OPERATOR_USERNAME: ${MASSAI_OPERATOR_USERNAME:-admin@test.com}
+      MASSAI_OPERATOR_PASSWORD: ${MASSAI_OPERATOR_PASSWORD:-password}
+      MASSAI_FRONTEND_BASE_URL: http://localhost:${FRONTEND_PORT:-3000}
+      PROVIDER_FACTOR_CLIENT_SECRET: ${PROVIDER_FACTOR_CLIENT_SECRET:-provider-factor-sa-secret}
+      PROVIDER_TASOWHEEL_CLIENT_SECRET: ${PROVIDER_TASOWHEEL_CLIENT_SECRET:-provider-tasowheel-sa-secret}
+      PROVIDER_E4M_CLIENT_SECRET: ${PROVIDER_E4M_CLIENT_SECRET:-provider-e4m-sa-secret}
+    volumes:
+      - simulator-studio-data:/data
+    ports:
+      - "${SIMULATOR_STUDIO_PORT:-3001}:8501"
+    depends_on:
+      backend:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8501')"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
 volumes:
   postgres-data:
   frontend-node-modules:
   backend-venv:
+  simulator-studio-data:

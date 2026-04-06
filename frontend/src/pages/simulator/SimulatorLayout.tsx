@@ -1,11 +1,13 @@
 import { startTransition, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  Activity,
   ArrowUpRight,
+  BookOpen,
   ChevronLeft,
+  LayoutDashboard,
   LogOut,
   RefreshCcw,
+  Server,
   Zap,
 } from "lucide-react";
 
@@ -186,7 +188,7 @@ export function SimulatorLayout() {
                 </div>
                 <div>
                   <p className="text-[0.8rem] font-semibold tracking-tight text-white">MASSAI</p>
-                  <p className="text-[0.6rem] uppercase tracking-[0.18em] text-slate-500">Simulator</p>
+                  <p className="text-[0.6rem] uppercase tracking-[0.18em] text-slate-500">Operations</p>
                 </div>
               </div>
             </>
@@ -233,42 +235,67 @@ export function SimulatorLayout() {
           </div>
         )}
 
-        {/* Navigation Label */}
-        {!sidebarCollapsed && (
-          <div className="px-3 pb-1 pt-4">
-            <p className="text-[0.6rem] font-semibold uppercase tracking-[0.22em] text-slate-600">
-              Contracts
-            </p>
-          </div>
-        )}
-
         {/* Contract List */}
         <ScrollArea className="sim-sidebar__nav">
-          <nav aria-label="Simulator contracts" className="grid gap-1.5 px-2 py-1">
-            {/* Home link */}
+          <nav aria-label="Operations navigation" className="grid gap-1 px-2 py-1">
+            {/* ─── Operations Section ─── */}
+            {!sidebarCollapsed && (
+              <div className="px-1 pb-1 pt-3">
+                <p className="text-[0.55rem] font-semibold uppercase tracking-[0.22em] text-slate-600">
+                  Operations
+                </p>
+              </div>
+            )}
+
             <NavLink
               className={({ isActive }) =>
-                cn(
-                  "sim-nav-item",
-                  isActive && "sim-nav-item--active",
-                )
+                cn("sim-nav-item", isActive && "sim-nav-item--active")
               }
               end
               to="/simulator"
             >
               {sidebarCollapsed ? (
                 <div className="grid size-8 place-items-center rounded-md bg-white/[0.06] text-[0.65rem] font-bold text-slate-300">
-                  <Activity className="size-3.5" />
+                  <LayoutDashboard className="size-3.5" />
                 </div>
               ) : (
                 <>
                   <div className="grid size-8 place-items-center rounded-md bg-white/[0.06]">
-                    <Activity className="size-3.5 text-slate-400" />
+                    <LayoutDashboard className="size-3.5 text-slate-400" />
                   </div>
-                  <span className="text-[0.78rem] font-medium text-slate-300">Overview</span>
+                  <span className="text-[0.78rem] font-medium text-slate-300">Dashboard</span>
                 </>
               )}
             </NavLink>
+
+            <NavLink
+              className={({ isActive }) =>
+                cn("sim-nav-item", isActive && "sim-nav-item--active")
+              }
+              to="/simulator/system"
+            >
+              {sidebarCollapsed ? (
+                <div className="grid size-8 place-items-center rounded-md bg-white/[0.06] text-[0.65rem] font-bold text-slate-300">
+                  <Server className="size-3.5" />
+                </div>
+              ) : (
+                <>
+                  <div className="grid size-8 place-items-center rounded-md bg-white/[0.06]">
+                    <Server className="size-3.5 text-slate-400" />
+                  </div>
+                  <span className="text-[0.78rem] font-medium text-slate-300">System</span>
+                </>
+              )}
+            </NavLink>
+
+            {/* ─── Contracts Section ─── */}
+            {!sidebarCollapsed && (
+              <div className="px-1 pb-1 pt-4">
+                <p className="text-[0.55rem] font-semibold uppercase tracking-[0.22em] text-slate-600">
+                  Contracts
+                </p>
+              </div>
+            )}
 
             {/* Contract items */}
             {contractsState.status === "loading" ? (
@@ -356,6 +383,35 @@ export function SimulatorLayout() {
                   );
                 })
               : null}
+
+            {/* ─── Tools Section ─── */}
+            {!sidebarCollapsed && (
+              <div className="px-1 pb-1 pt-4">
+                <p className="text-[0.55rem] font-semibold uppercase tracking-[0.22em] text-slate-600">
+                  Tools
+                </p>
+              </div>
+            )}
+
+            <NavLink
+              className={({ isActive }) =>
+                cn("sim-nav-item", isActive && "sim-nav-item--active")
+              }
+              to="/simulator/guide"
+            >
+              {sidebarCollapsed ? (
+                <div className="grid size-8 place-items-center rounded-md bg-white/[0.06] text-[0.65rem] font-bold text-slate-300">
+                  <BookOpen className="size-3.5" />
+                </div>
+              ) : (
+                <>
+                  <div className="grid size-8 place-items-center rounded-md bg-white/[0.06]">
+                    <BookOpen className="size-3.5 text-slate-400" />
+                  </div>
+                  <span className="text-[0.78rem] font-medium text-slate-300">Guide</span>
+                </>
+              )}
+            </NavLink>
           </nav>
         </ScrollArea>
 
@@ -435,10 +491,14 @@ export function SimulatorLayout() {
                   onClick={() => void navigate("/simulator")}
                   variant="link"
                 >
-                  Simulator
+                  Operations
                 </Button>
                 <span className="text-slate-600">/</span>
-                <span className="font-medium text-white">Contract</span>
+                <span className="font-medium text-white">
+                  {location.pathname === "/simulator/system" ? "System Health"
+                    : location.pathname === "/simulator/guide" ? "Guide"
+                    : "Contract"}
+                </span>
               </nav>
             )}
           </div>

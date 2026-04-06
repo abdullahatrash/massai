@@ -6,6 +6,7 @@ export type SimulatorContract = {
   productName: string | null;
   providerId: string | null;
   deliveryDate: string | null;
+  quantityTotal: number | null;
   milestonesCompleted: number;
   milestonesTotal: number;
 };

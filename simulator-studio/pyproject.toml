@@ -1,0 +1,11 @@
+[project]
+name = "massai-simulator-studio"
+version = "0.1.0"
+description = "Visual factory onboarding and simulation studio for MaaSAI demos."
+requires-python = ">=3.12"
+dependencies = [
+  "streamlit>=1.44,<2",
+]
+
+[tool.uv]
+package = true

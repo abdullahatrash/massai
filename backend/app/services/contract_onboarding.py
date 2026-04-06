@@ -3,16 +3,20 @@ from __future__ import annotations
 import re
 import uuid
 from datetime import UTC, datetime
-from typing import Iterable
+from typing import Any, Iterable
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.blockchain import BlockchainContractMetadata, BlockchainService
 from app.core.response import ApiException
+from app.models.alert import Alert
+from app.models.blockchain_event import BlockchainEvent
 from app.models.contract import Contract
 from app.models.milestone import Milestone
-from app.schemas.admin import AdminContractResponse
+from app.models.notification import Notification
+from app.models.status_update import StatusUpdate
+from app.schemas.admin import AdminContractResponse, CreateDemoContractRequest
 from app.services.ingest_profiles import IngestProfileService
 
 _ADDRESS_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
@@ -164,6 +168,132 @@ class ContractOnboardingService:
         return result.scalar_one_or_none()
 
     @staticmethod
+    async def _get_contract_by_public_id(
+        session: AsyncSession,
+        public_id: str,
+    ) -> Contract | None:
+        result = await session.execute(
+            select(Contract).where(Contract.public_id == public_id)
+        )
+        return result.scalar_one_or_none()
+
+    @staticmethod
+    async def create_demo_contract(
+        session: AsyncSession,
+        request: CreateDemoContractRequest,
+    ) -> Contract:
+        existing_contract = await ContractOnboardingService._get_contract_by_public_id(
+            session,
+            request.contract_id,
+        )
+        if existing_contract is not None:
+            raise ApiException(
+                status_code=409,
+                code="CONTRACT_ALREADY_EXISTS",
+                message="Contract already registered.",
+            )
+
+        contract = Contract(id=uuid.uuid4())
+        session.add(contract)
+        contract.public_id = request.contract_id
+        contract.blockchain_contract_address = None
+        contract.pilot_type = request.pilot_type.upper()
+        contract.agreement_type = request.agreement_type
+        contract.status = request.status.upper()
+        contract.provider_id = request.provider_id
+        contract.consumer_id = request.consumer_id
+        contract.product_name = request.product_name
+        contract.quantity_total = request.quantity_total
+        contract.delivery_date = request.delivery_date
+        contract.activated_at = datetime.now(UTC)
+        contract.config = ContractOnboardingService._build_demo_contract_config(request)
+
+        milestones: list[Milestone] = []
+        for milestone_request in request.milestones:
+            milestone = Milestone(
+                id=uuid.uuid4(),
+                contract_id=contract.id,
+            )
+            milestone.contract = contract
+            milestone.milestone_ref = milestone_request.milestone_ref
+            milestone.name = milestone_request.name
+            milestone.planned_date = milestone_request.planned_date
+            milestone.approval_required = milestone_request.approval_required
+            milestone.status = "PENDING"
+            milestone.evidence = []
+            milestone.completion_criteria = dict(milestone_request.completion_criteria or {})
+            session.add(milestone)
+            milestones.append(milestone)
+        contract.milestones = milestones
+
+        if request.profile_key and request.profile_version:
+            await ContractOnboardingService._bind_requested_profile(
+                session,
+                contract,
+                request.profile_key,
+                request.profile_version,
+            )
+        else:
+            IngestProfileService.bind_default_profile(contract)
+
+        await session.flush()
+        return contract
+
+    @staticmethod
+    async def _bind_requested_profile(
+        session: AsyncSession,
+        contract: Contract,
+        profile_key: str,
+        profile_version: int,
+    ) -> None:
+        try:
+            resolved_spec = IngestProfileService.resolve_builtin_profile(
+                profile_key,
+                profile_version,
+            )
+            profile_id = None
+        except ApiException:
+            profile = await IngestProfileService.get_profile(
+                session,
+                profile_key,
+                profile_version,
+            )
+            if profile is None:
+                raise ApiException(
+                    status_code=404,
+                    code="INGEST_PROFILE_NOT_FOUND",
+                    message="Ingest profile not found.",
+                )
+            resolved_spec = dict(profile.resolved_spec or {})
+            profile_id = profile.id
+
+        resolved_spec["profileVersion"] = profile_version
+        IngestProfileService.bind_contract_snapshot(
+            contract,
+            resolved_spec,
+            profile_id=profile_id,
+        )
+
+    @staticmethod
+    def _build_demo_contract_config(
+        request: CreateDemoContractRequest,
+    ) -> dict[str, Any]:
+        config: dict[str, Any] = {
+            "public_id": request.contract_id,
+            "factory_name": request.factory_name,
+            "alert_conditions": list(request.alert_conditions or []),
+            "last_known_state": {
+                "quantityPlanned": request.quantity_total,
+                "quantityProduced": 0,
+            },
+        }
+        if request.quality_target is not None:
+            config["quality_target"] = request.quality_target
+        if request.data_update_frequency is not None:
+            config["dataUpdateFrequency"] = request.data_update_frequency
+        return config
+
+    @staticmethod
     def serialize_contract(contract: Contract) -> dict[str, object]:
         payload = AdminContractResponse(
             id=str(contract.id),
@@ -176,9 +306,24 @@ class ContractOnboardingService:
             productName=contract.product_name,
             deliveryDate=contract.delivery_date,
             milestoneCount=len(contract.milestones or []),
+            ingestProfileKey=contract.ingest_profile_key,
+            ingestProfileVersion=contract.ingest_profile_version,
         )
         return payload.model_dump(by_alias=True)
 
     @staticmethod
     def serialize_contracts(contracts: Iterable[Contract]) -> list[dict[str, object]]:
         return [ContractOnboardingService.serialize_contract(contract) for contract in contracts]
+
+    @staticmethod
+    async def delete_contract(
+        session: AsyncSession,
+        contract: Contract,
+    ) -> None:
+        contract_id = contract.id
+        await session.execute(delete(Notification).where(Notification.contract_id == contract_id))
+        await session.execute(delete(BlockchainEvent).where(BlockchainEvent.contract_id == contract_id))
+        await session.execute(delete(Alert).where(Alert.contract_id == contract_id))
+        await session.execute(delete(StatusUpdate).where(StatusUpdate.contract_id == contract_id))
+        await session.execute(delete(Milestone).where(Milestone.contract_id == contract_id))
+        await session.delete(contract)

@@ -1,5 +1,5 @@
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
-import { Gauge, Play, Square, TimerReset } from "lucide-react";
+import { startTransition, useEffect, useRef, useState } from "react";
+import { Gauge, Pause, Play, Repeat, Square, TimerReset } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,6 +7,9 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 
+import { fetchContractIngestSpec } from "../../api/ingestSpec";
+import { fetchScenariosForPilot } from "../../api/scenarios";
+import { useRunLog, createRunLogEntry } from "../../simulator/runLog";
 import type { SimulatorContract } from "./simulatorShared";
 import {
   getProviderClientConfig,
@@ -15,57 +18,18 @@ import {
   type ScenarioDefinition,
   type ScenarioStepResult,
   runScenarioPlayback,
+  runContinuousPlayback,
+  PauseController,
 } from "../../simulator/runner";
-import { e4mScenarios } from "../../simulator/scenarios/e4m_scenarios";
-import { factorScenarios } from "../../simulator/scenarios/factor_scenarios";
-import { tasowheelScenarios } from "../../simulator/scenarios/tasowheel_scenarios";
 
 type ScenarioRunnerProps = {
   contract: SimulatorContract;
   onPlaybackSettled: () => void;
 };
 
-type RunnerStatus = "completed" | "error" | "idle" | "running" | "stopped";
-
-type ScenarioLogEntry = {
-  id: string;
-  level: "error" | "info" | "success";
-  message: string;
-  payload?: Record<string, unknown>;
-  response?: Record<string, unknown>;
-};
+type RunnerStatus = "completed" | "error" | "idle" | "paused" | "running" | "stopped";
 
 const SPEED_OPTIONS = [1, 10, 100] as const;
-
-function getScenarioCatalog(pilotType: string | null): ScenarioDefinition[] {
-  switch ((pilotType ?? "").toUpperCase()) {
-    case "FACTOR":
-      return factorScenarios;
-    case "TASOWHEEL":
-      return tasowheelScenarios;
-    case "E4M":
-      return e4mScenarios;
-    default:
-      return [];
-  }
-}
-
-function createLogEntry(
-  level: ScenarioLogEntry["level"],
-  message: string,
-  details?: {
-    payload?: Record<string, unknown>;
-    response?: Record<string, unknown>;
-  },
-): ScenarioLogEntry {
-  return {
-    id: `${level}-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-    level,
-    message,
-    payload: details?.payload,
-    response: details?.response,
-  };
-}
 
 function prettyJson(value: unknown) {
   return JSON.stringify(value, null, 2);
@@ -92,11 +56,14 @@ function getStatusDotClassName(status: RunnerStatus) {
   if (status === "running") {
     return "bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.5)] animate-pulse";
   }
+  if (status === "paused") {
+    return "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.5)]";
+  }
 
   return "bg-slate-500";
 }
 
-function getLogToneClassName(level: ScenarioLogEntry["level"]) {
+function getLogToneClassName(level: "error" | "info" | "success") {
   if (level === "success") {
     return "border-emerald-400/15 bg-emerald-400/[0.04]";
   }
@@ -108,30 +75,62 @@ function getLogToneClassName(level: ScenarioLogEntry["level"]) {
 }
 
 export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerProps) {
-  const scenarios = useMemo(() => getScenarioCatalog(contract.pilotType), [contract.pilotType]);
-  const [selectedScenarioId, setSelectedScenarioId] = useState(scenarios[0]?.id ?? "");
+  const [scenarios, setScenarios] = useState<ScenarioDefinition[]>([]);
+  const [scenariosLoading, setScenariosLoading] = useState(true);
+  const [selectedScenarioId, setSelectedScenarioId] = useState("");
   const [speedIndex, setSpeedIndex] = useState(0);
   const [status, setStatus] = useState<RunnerStatus>("idle");
-  const [currentStepLabel, setCurrentStepLabel] = useState("Choose a scenario to begin.");
-  const [progressText, setProgressText] = useState(
-    scenarios[0] ? `Step 0/${scenarios[0].steps.length}` : "No scenario selected.",
-  );
-  const [logs, setLogs] = useState<ScenarioLogEntry[]>([]);
+  const [currentStepLabel, setCurrentStepLabel] = useState("Loading scenarios...");
+  const [progressText, setProgressText] = useState("No scenario selected.");
+  const runLog = useRunLog(contract.id);
+  const [profileVersion, setProfileVersion] = useState<number | undefined>(undefined);
+  const [continuousMode, setContinuousMode] = useState(false);
+  const [cycleCount, setCycleCount] = useState(0);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const pauseControllerRef = useRef<PauseController | null>(null);
 
   const selectedScenario = scenarios.find((scenario) => scenario.id === selectedScenarioId) ?? null;
   const speedMultiplier = SPEED_OPTIONS[speedIndex] ?? 10;
   const providerClient = getProviderClientConfig(contract.pilotType);
 
   useEffect(() => {
-    setSelectedScenarioId(scenarios[0]?.id ?? "");
-    setStatus("idle");
-    setLogs([]);
-    setCurrentStepLabel("Choose a scenario to begin.");
-    setProgressText(scenarios[0] ? `Step 0/${scenarios[0].steps.length}` : "No scenario selected.");
+    const controller = new AbortController();
+    setScenariosLoading(true);
+    fetchScenariosForPilot(contract.pilotType, controller.signal)
+      .then((loaded) => {
+        startTransition(() => {
+          setScenarios(loaded);
+          setSelectedScenarioId(loaded[0]?.id ?? "");
+          setStatus("idle");
+          runLog.clear();
+          setCurrentStepLabel(
+            loaded.length > 0 ? "Choose a scenario to begin." : "No scenarios available.",
+          );
+          setProgressText(
+            loaded[0] ? `Step 0/${loaded[0].steps.length}` : "No scenario selected.",
+          );
+          setScenariosLoading(false);
+        });
+      })
+      .catch(() => {
+        startTransition(() => {
+          setScenarios([]);
+          setScenariosLoading(false);
+          setCurrentStepLabel("Failed to load scenarios.");
+        });
+      });
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
-  }, [contract.id, scenarios]);
+    return () => controller.abort();
+  }, [contract.id, contract.pilotType]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchContractIngestSpec(contract.id, controller.signal)
+      .then((spec) => setProfileVersion(spec.profileVersion))
+      .catch(() => {});
+    return () => controller.abort();
+  }, [contract.id]);
 
   useEffect(() => {
     return () => {
@@ -144,6 +143,20 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
     abortControllerRef.current?.abort();
   };
 
+  const handlePauseToggle = () => {
+    const pc = pauseControllerRef.current;
+    if (!pc) return;
+    if (pc.isPaused) {
+      pc.resume();
+      setStatus("running");
+      setCurrentStepLabel("Resumed playback.");
+    } else {
+      pc.pause();
+      setStatus("paused");
+      setCurrentStepLabel("Playback paused.");
+    }
+  };
+
   const handleRun = async () => {
     if (!selectedScenario || !providerClient) {
       return;
@@ -152,76 +165,104 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
     abortControllerRef.current?.abort();
     const nextController = new AbortController();
     abortControllerRef.current = nextController;
+    const nextPauseController = new PauseController();
+    pauseControllerRef.current = nextPauseController;
 
     startTransition(() => {
       setStatus("running");
-      setLogs([
-        createLogEntry(
+      setCycleCount(0);
+      runLog.reset([
+        createRunLogEntry(
           "info",
-          `Starting ${selectedScenario.name} at ${speedMultiplier}x speed for ${contract.id}.`,
+          `Starting ${selectedScenario.name} at ${speedMultiplier}x speed${continuousMode ? " (continuous)" : ""} for ${contract.id}.`,
         ),
       ]);
       setCurrentStepLabel(selectedScenario.steps[0]?.description ?? "Scenario starting.");
       setProgressText(`Step 0/${selectedScenario.steps.length}`);
     });
 
+    const playbackCallbacks = {
+      contractId: contract.id,
+      pauseController: nextPauseController,
+      profileVersion,
+      quantityOverride: contract.quantityTotal ?? undefined,
+      onStepStart: ({ currentStep, payload, step, totalSteps }: {
+        currentStep: number;
+        payload: Record<string, unknown>;
+        step: { title: string; description: string };
+        totalSteps: number;
+      }) => {
+        startTransition(() => {
+          setCurrentStepLabel(`Pushing ${step.title.toLowerCase()}...`);
+          setProgressText(`Step ${currentStep}/${totalSteps} - ${step.description}`);
+          runLog.append(
+            createRunLogEntry(
+              "info",
+              `Step ${currentStep}/${totalSteps} - ${step.title}`,
+              { payload },
+            ),
+          );
+        });
+      },
+      onStepSuccess: (result: ScenarioStepResult) => {
+        startTransition(() => {
+          setProgressText(
+            result.delayUntilNextStepMs > 0
+              ? `Step ${result.currentStep}/${result.totalSteps} complete - waiting ${result.delayUntilNextStepMs}ms`
+              : `Step ${result.currentStep}/${result.totalSteps} complete - final step reached`,
+          );
+          setCurrentStepLabel(
+            result.delayUntilNextStepMs > 0
+              ? "Waiting for the next playback interval."
+              : "Playback complete.",
+          );
+          runLog.append(
+            createRunLogEntry("success", summarizeStepResult(result), {
+              payload: result.payload,
+              response: {
+                alertsTriggered: result.alertDetails.map((alert) => ({
+                  description: alert.description,
+                  severity: alert.severity,
+                })),
+                ...result.response,
+              },
+            }),
+          );
+        });
+      },
+      providerClient,
+      scenario: selectedScenario,
+      signal: nextController.signal,
+      speedMultiplier,
+    };
+
     try {
-      await runScenarioPlayback({
-        contractId: contract.id,
-        onStepStart: ({ currentStep, payload, step, totalSteps }) => {
-          startTransition(() => {
-            setCurrentStepLabel(`Pushing ${step.title.toLowerCase()}...`);
-            setProgressText(`Step ${currentStep}/${totalSteps} - ${step.description}`);
-            setLogs((currentLogs) => [
-              ...currentLogs,
-              createLogEntry(
-                "info",
-                `Step ${currentStep}/${totalSteps} - ${step.title}`,
-                { payload },
-              ),
-            ]);
-          });
-        },
-        onStepSuccess: (result) => {
-          startTransition(() => {
-            setProgressText(
-              result.delayUntilNextStepMs > 0
-                ? `Step ${result.currentStep}/${result.totalSteps} complete - waiting ${result.delayUntilNextStepMs}ms`
-                : `Step ${result.currentStep}/${result.totalSteps} complete - final step reached`,
-            );
-            setCurrentStepLabel(
-              result.delayUntilNextStepMs > 0
-                ? "Waiting for the next playback interval."
-                : "Playback complete.",
-            );
-            setLogs((currentLogs) => [
-              ...currentLogs,
-              createLogEntry("success", summarizeStepResult(result), {
-                payload: result.payload,
-                response: {
-                  alertsTriggered: result.alertDetails.map((alert) => ({
-                    description: alert.description,
-                    severity: alert.severity,
-                  })),
-                  ...result.response,
-                },
-              }),
-            ]);
-          });
-        },
-        providerClient,
-        scenario: selectedScenario,
-        signal: nextController.signal,
-        speedMultiplier,
-      });
+      if (continuousMode) {
+        await runContinuousPlayback({
+          ...playbackCallbacks,
+          onCycleComplete: (cycle) => {
+            startTransition(() => {
+              setCycleCount(cycle);
+              runLog.append(
+                createRunLogEntry(
+                  "info",
+                  `Cycle ${cycle} complete. Restarting scenario...`,
+                ),
+              );
+            });
+            onPlaybackSettled();
+          },
+        });
+      } else {
+        await runScenarioPlayback(playbackCallbacks);
+      }
 
       startTransition(() => {
         setStatus("completed");
         setCurrentStepLabel("Scenario playback finished.");
-        setLogs((currentLogs) => [
-          ...currentLogs,
-          createLogEntry("success", `${selectedScenario.name} finished successfully.`),
-        ]);
+        runLog.append(
+          createRunLogEntry("success", `${selectedScenario.name} finished successfully.`),
+        );
       });
       onPlaybackSettled();
     } catch (error) {
@@ -230,7 +271,7 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
       startTransition(() => {
         setStatus(nextStatus);
         setCurrentStepLabel(message);
-        setLogs((currentLogs) => [...currentLogs, createLogEntry("error", message)]);
+        runLog.append(createRunLogEntry("error", message));
       });
       onPlaybackSettled();
     } finally {
@@ -261,10 +302,14 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
 
           {/* Scenario selector */}
           <div className="grid gap-2">
-            {scenarios.length === 0 ? (
+            {scenariosLoading ? (
+              <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-[0.72rem] text-slate-500">
+                Loading scenarios...
+              </div>
+            ) : scenarios.length === 0 ? (
               <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-3 text-[0.72rem] text-slate-500">
                 {contract.pilotType
-                  ? `No prebuilt scenarios for "${contract.pilotType}".`
+                  ? `No scenarios for "${contract.pilotType}".`
                   : "No pilot type set."}
               </div>
             ) : (
@@ -333,7 +378,7 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
           ) : null}
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Button
               disabled={!selectedScenario || status === "running" || !providerClient}
               onClick={() => void handleRun()}
@@ -344,7 +389,26 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
               Run scenario
             </Button>
             <Button
-              disabled={status !== "running"}
+              disabled={status !== "running" && status !== "paused"}
+              onClick={handlePauseToggle}
+              size="sm"
+              type="button"
+              variant="outline"
+            >
+              {status === "paused" ? (
+                <>
+                  <Play data-icon="inline-start" />
+                  Resume
+                </>
+              ) : (
+                <>
+                  <Pause data-icon="inline-start" />
+                  Pause
+                </>
+              )}
+            </Button>
+            <Button
+              disabled={status !== "running" && status !== "paused"}
               onClick={handleStop}
               size="sm"
               type="button"
@@ -353,6 +417,28 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
               <Square data-icon="inline-start" />
               Stop
             </Button>
+
+            <div className="ml-2 flex items-center gap-1.5 border-l border-white/[0.06] pl-3">
+              <button
+                className={cn(
+                  "flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-[0.68rem] transition",
+                  continuousMode
+                    ? "border-cyan-400/25 bg-cyan-400/10 text-cyan-300"
+                    : "border-white/[0.06] bg-white/[0.02] text-slate-500 hover:text-slate-300",
+                )}
+                disabled={status === "running"}
+                onClick={() => setContinuousMode((prev) => !prev)}
+                type="button"
+              >
+                <Repeat className="size-3" />
+                Continuous
+              </button>
+              {continuousMode && cycleCount > 0 ? (
+                <Badge className="border-cyan-400/20 bg-cyan-400/8 text-[0.58rem] text-cyan-300">
+                  {cycleCount} cycles
+                </Badge>
+              ) : null}
+            </div>
           </div>
         </div>
       </div>
@@ -365,7 +451,7 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
         <div className="p-3">
           <ScrollArea className="h-[28rem] pr-2">
             <div className="grid gap-2">
-              {logs.length === 0 ? (
+              {runLog.entries.length === 0 ? (
                 <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] px-4 py-6 text-center">
                   <p className="text-[0.78rem] font-medium text-slate-400">No playback yet</p>
                   <p className="mt-1 text-[0.68rem] text-slate-600">
@@ -373,7 +459,7 @@ export function ScenarioRunner({ contract, onPlaybackSettled }: ScenarioRunnerPr
                   </p>
                 </div>
               ) : (
-                logs.map((entry) => (
+                runLog.entries.map((entry) => (
                   <div
                     className={cn(
                       "rounded-lg border p-3",

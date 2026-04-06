@@ -14,8 +14,10 @@ import { NotFoundPage } from "./pages/NotFoundPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { RouteErrorBoundary } from "./pages/RouteErrorBoundary";
 import { ContractSimulator } from "./pages/simulator/ContractSimulator";
+import { SimulatorGuide } from "./pages/simulator/SimulatorGuide";
 import { SimulatorIndex } from "./pages/simulator/SimulatorIndex";
 import { SimulatorLayout } from "./pages/simulator/SimulatorLayout";
+import { SystemHealthPage } from "./pages/simulator/SystemHealthPage";
 
 const simulatorEnabled =
   import.meta.env.DEV && import.meta.env.VITE_ENABLE_SIMULATOR !== "false";
@@ -111,6 +113,14 @@ const router = createBrowserRouter([
                     {
                       index: true,
                       element: <SimulatorIndex />,
+                    },
+                    {
+                      path: "guide",
+                      element: <SimulatorGuide />,
+                    },
+                    {
+                      path: "system",
+                      element: <SystemHealthPage />,
                     },
                     {
                       path: ":contractId",
