@@ -69,10 +69,10 @@ export function DashboardLayout() {
                 className={({ isActive }) =>
                   cn("dash-nav-item", isActive && "dash-nav-item--active")
                 }
-                to="/simulator"
+                to="/admin"
               >
                 <Settings2 className="size-4" />
-                <span>Simulator</span>
+                <span>Operations</span>
               </NavLink>
             ) : null}
           </nav>

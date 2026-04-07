@@ -57,10 +57,10 @@ export function SimulatorGuide() {
             </div>
             <div>
               <h2 className="text-[1.2rem] font-semibold tracking-tight text-white">
-                Operator Guide
+                Admin Guide
               </h2>
               <p className="mt-0.5 text-[0.75rem] text-slate-400">
-                How to use the admin simulator — no code required
+                How to use the MaaSAI admin console — no code required
               </p>
             </div>
           </div>
@@ -71,7 +71,7 @@ export function SimulatorGuide() {
         <div className="space-y-8 pb-12 pr-4">
 
           {/* What it does */}
-          <Section title="What The Simulator Does">
+          <Section title="What The Admin Console Does">
             <div className="grid gap-2 sm:grid-cols-2">
               {[
                 "View and manage all active contracts",
@@ -98,14 +98,14 @@ export function SimulatorGuide() {
           <Section title="Getting Started">
             <div className="space-y-2">
               <p className="text-[0.75rem] text-slate-400">
-                Log into the MaaSAI dashboard, then navigate to <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-slate-300">/simulator</code>.
+                Log into the MaaSAI dashboard, then navigate to <code className="rounded bg-white/[0.06] px-1.5 py-0.5 text-slate-300">/admin</code>.
               </p>
-              <KeyValue label="URL" value="http://localhost:3000/simulator" />
+              <KeyValue label="URL" value="http://localhost:3000/admin" />
               <KeyValue label="Username" value="admin@test.com" />
               <KeyValue label="Password" value="password" />
             </div>
             <Tip>
-              The simulator is only available to users with the <strong>admin</strong> role.
+              The admin console is only available to users with the <strong>admin</strong> role.
             </Tip>
           </Section>
 
@@ -280,14 +280,14 @@ export function SimulatorGuide() {
             <div className="space-y-2">
               {[
                 {
-                  label: "Admin Simulator",
+                  label: "Admin Console",
                   color: "border-amber-400/20 bg-amber-400/[0.04]",
                   text: "Creates demo contracts, sends simulated updates to the v2 ingest API, authenticates as the provider service account via Keycloak.",
                 },
                 {
                   label: "Keycloak",
                   color: "border-purple-400/20 bg-purple-400/[0.04]",
-                  text: "Issues tokens for the provider service account using client_credentials flow. No manual login needed for the simulator.",
+                  text: "Issues tokens for the provider service account using client_credentials flow. No manual login needed for operator testing.",
                 },
                 {
                   label: "MaaSAI Backend",
@@ -342,7 +342,7 @@ export function SimulatorGuide() {
           <Section title="Recommended Demo Sequence">
             <div className="space-y-2">
               {[
-                "Open the simulator at /simulator",
+                "Open the admin console at /admin",
                 "Click New Contract and pick Factor",
                 "Set quantity to 500 and a future delivery date",
                 "Create the contract",
@@ -370,7 +370,7 @@ export function SimulatorGuide() {
           <Section title="Troubleshooting">
             <div className="space-y-2">
               {[
-                { issue: "Simulator page does not load", fix: "Confirm the frontend container is running and you are logged in as admin@test.com." },
+                { issue: "Admin page does not load", fix: "Confirm the frontend container is running and you are logged in as admin@test.com." },
                 { issue: "\"No provider service account configured\"", fix: "The contract pilot type must be FACTOR, TASOWHEEL, or E4M." },
                 { issue: "Scenario fails with 401", fix: "The provider token may have expired. Stop and restart the scenario. Confirm Keycloak is running." },
                 { issue: "Dashboard does not update", fix: "Refresh the dashboard. Check Runner Output for errors. Open the Events panel to confirm events arrive." },

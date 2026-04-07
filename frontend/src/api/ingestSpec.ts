@@ -52,7 +52,10 @@ export type ContractIngestSpec = {
 };
 
 export function fetchContractIngestSpec(contractId: string, signal?: AbortSignal) {
-  return apiRequest<ContractIngestSpec>(`/api/v2/contracts/${contractId}/ingest-spec`, {
-    signal,
-  });
+  return apiRequest<ContractIngestSpec>(
+    `/api/v2/admin/contracts/${contractId}/ingest-spec`,
+    {
+      signal,
+    },
+  );
 }

@@ -244,7 +244,9 @@ function isAbortError(error: unknown) {
 
 /** Uses the current user's token. Token expiry during long playbacks may cause 401. */
 async function fetchAlerts(contractId: string, signal: AbortSignal) {
-  return apiRequest<SimulatorAlert[]>(`/api/v1/contracts/${contractId}/alerts`, { signal });
+  return apiRequest<SimulatorAlert[]>(`/api/v2/admin/contracts/${contractId}/alerts`, {
+    signal,
+  });
 }
 
 function diffAlerts(previousAlerts: SimulatorAlert[], nextAlerts: SimulatorAlert[]) {
@@ -438,7 +440,7 @@ export async function fetchSimulatorAlerts(contractId: string, signal: AbortSign
 
 export async function fetchSimulatorMilestones(contractId: string, signal: AbortSignal) {
   return apiRequest<SimulatorMilestoneSummary[]>(
-    `/api/v1/contracts/${contractId}/milestones`,
+    `/api/v2/admin/contracts/${contractId}/milestones`,
     { signal },
   );
 }

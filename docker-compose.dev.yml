@@ -210,6 +210,18 @@ services:
       PROVIDER_E4M_CLIENT_SECRET: ${PROVIDER_E4M_CLIENT_SECRET:-provider-e4m-sa-secret}
     volumes:
       - simulator-studio-data:/data
+      # Hot-reload: mount source over the image so edits trigger Streamlit's file watcher.
+      - ./simulator-studio/simulator_studio:/workspace/simulator-studio/simulator_studio
+      - ./simulator-studio/.streamlit:/workspace/simulator-studio/.streamlit
+      - ./mock-sensors/scenarios:/workspace/mock-sensors/scenarios:ro
+    command:
+      - streamlit
+      - run
+      - simulator_studio/app.py
+      - --server.address=0.0.0.0
+      - --server.port=8501
+      - --server.runOnSave=true
+      - --server.fileWatcherType=poll
     ports:
       - "${SIMULATOR_STUDIO_PORT:-3001}:8501"
     depends_on:

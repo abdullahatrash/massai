@@ -7,18 +7,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
 import {
-  acknowledgeAlert,
-  listAlertHistory,
-  type ContractAlert,
-} from "../../api/alerts";
+  acknowledgeAdminAlert,
+  listAdminAlertHistory,
+  type AdminAlert,
+} from "../../api/adminAlerts";
 import type { SimulatorContract } from "./simulatorShared";
 
 type ContractAlertsPanelProps = {
   contract: SimulatorContract;
 };
 
-function getSeverityClass(severity: string) {
-  switch (severity.toUpperCase()) {
+function getSeverityClass(severity: string | null) {
+  switch ((severity ?? "").toUpperCase()) {
     case "CRITICAL": return "border-rose-400/20 bg-rose-400/8 text-rose-300";
     case "HIGH": return "border-orange-400/20 bg-orange-400/8 text-orange-300";
     case "MEDIUM": return "border-amber-400/20 bg-amber-400/8 text-amber-300";
@@ -38,13 +38,13 @@ function formatDate(iso: string | null): string {
 }
 
 export function ContractAlertsPanel({ contract }: ContractAlertsPanelProps) {
-  const [alerts, setAlerts] = useState<ContractAlert[]>([]);
+  const [alerts, setAlerts] = useState<AdminAlert[]>([]);
   const [loading, setLoading] = useState(true);
   const [acknowledging, setAcknowledging] = useState<string | null>(null);
 
   useEffect(() => {
     setLoading(true);
-    listAlertHistory(contract.id)
+    listAdminAlertHistory(contract.id)
       .then(setAlerts)
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -53,7 +53,7 @@ export function ContractAlertsPanel({ contract }: ContractAlertsPanelProps) {
   const handleAcknowledge = async (alertId: string) => {
     setAcknowledging(alertId);
     try {
-      const updated = await acknowledgeAlert(contract.id, alertId);
+      const updated = await acknowledgeAdminAlert(contract.id, alertId);
       setAlerts((prev) => prev.map((a) => (a.id === alertId ? updated : a)));
     } catch {
       // ignore

@@ -5,21 +5,24 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
-import { listMilestones, type MilestoneSummary } from "../../api/milestones";
+import {
+  listAdminMilestones,
+  type AdminMilestoneSummary,
+} from "../../api/adminMilestones";
 import type { SimulatorContract } from "./simulatorShared";
 
 type ContractMilestonesPanelProps = {
   contract: SimulatorContract;
 };
 
-function getStatusIcon(status: string, isOverdue: boolean) {
+function getStatusIcon(status: string | null, isOverdue: boolean) {
   if (status === "COMPLETED") return <CheckCircle2 className="size-4 text-emerald-400" />;
   if (status === "REJECTED") return <AlertTriangle className="size-4 text-rose-400" />;
   if (isOverdue) return <AlertTriangle className="size-4 text-amber-400" />;
   return <Clock className="size-4 text-slate-500" />;
 }
 
-function getStatusBadgeClass(status: string, isOverdue: boolean) {
+function getStatusBadgeClass(status: string | null, isOverdue: boolean) {
   if (status === "COMPLETED") return "border-emerald-400/20 bg-emerald-400/8 text-emerald-300";
   if (status === "REJECTED") return "border-rose-400/20 bg-rose-400/8 text-rose-300";
   if (isOverdue) return "border-amber-400/20 bg-amber-400/8 text-amber-300";
@@ -36,12 +39,12 @@ function formatDate(iso: string | null): string {
 }
 
 export function ContractMilestonesPanel({ contract }: ContractMilestonesPanelProps) {
-  const [milestones, setMilestones] = useState<MilestoneSummary[]>([]);
+  const [milestones, setMilestones] = useState<AdminMilestoneSummary[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    listMilestones(contract.id)
+    listAdminMilestones(contract.id)
       .then(setMilestones)
       .catch(() => {})
       .finally(() => setLoading(false));

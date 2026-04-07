@@ -1,4 +1,10 @@
-import { Navigate, RouterProvider, createBrowserRouter } from "react-router-dom";
+import {
+  Navigate,
+  RouterProvider,
+  createBrowserRouter,
+  useLocation,
+  useParams,
+} from "react-router-dom";
 
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { DashboardLayout } from "./layouts/DashboardLayout";
@@ -13,7 +19,15 @@ import { ContractsList } from "./pages/ContractsList";
 import { NotFoundPage } from "./pages/NotFoundPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { RouteErrorBoundary } from "./pages/RouteErrorBoundary";
-import { ContractSimulator } from "./pages/simulator/ContractSimulator";
+import {
+  AdminContractAlertsPage,
+  AdminContractEventsPage,
+  AdminContractIngestPage,
+  AdminContractLayout,
+  AdminContractMilestonesPage,
+  AdminContractOverviewPage,
+  AdminContractTestingPage,
+} from "./pages/simulator/AdminContractPages";
 import { SimulatorGuide } from "./pages/simulator/SimulatorGuide";
 import { SimulatorIndex } from "./pages/simulator/SimulatorIndex";
 import { SimulatorLayout } from "./pages/simulator/SimulatorLayout";
@@ -21,6 +35,25 @@ import { SystemHealthPage } from "./pages/simulator/SystemHealthPage";
 
 const simulatorEnabled =
   import.meta.env.DEV && import.meta.env.VITE_ENABLE_SIMULATOR !== "false";
+
+function LegacySimulatorRedirect() {
+  const { contractId } = useParams();
+  const location = useLocation();
+
+  if (location.pathname === "/simulator" || location.pathname === "/simulator/") {
+    return <Navigate replace to="/admin" />;
+  }
+  if (location.pathname === "/simulator/guide") {
+    return <Navigate replace to="/admin/guide" />;
+  }
+  if (location.pathname === "/simulator/system") {
+    return <Navigate replace to="/admin/system" />;
+  }
+  if (contractId) {
+    return <Navigate replace to={`/admin/contracts/${contractId}/overview`} />;
+  }
+  return <Navigate replace to="/admin" />;
+}
 
 const router = createBrowserRouter([
   {
@@ -107,7 +140,7 @@ const router = createBrowserRouter([
               element: <ProtectedRoute requiredRole="admin" />,
               children: [
                 {
-                  path: "simulator",
+                  path: "admin",
                   element: <SimulatorLayout />,
                   children: [
                     {
@@ -123,21 +156,75 @@ const router = createBrowserRouter([
                       element: <SystemHealthPage />,
                     },
                     {
-                      path: ":contractId",
-                      element: <ContractSimulator />,
+                      path: "contracts/:contractId",
+                      element: <AdminContractLayout />,
+                      children: [
+                        {
+                          index: true,
+                          element: <Navigate replace to="overview" />,
+                        },
+                        {
+                          path: "overview",
+                          element: <AdminContractOverviewPage />,
+                        },
+                        {
+                          path: "ingest",
+                          element: <AdminContractIngestPage />,
+                        },
+                        {
+                          path: "alerts",
+                          element: <AdminContractAlertsPage />,
+                        },
+                        {
+                          path: "milestones",
+                          element: <AdminContractMilestonesPage />,
+                        },
+                        {
+                          path: "events",
+                          element: <AdminContractEventsPage />,
+                        },
+                        {
+                          path: "testing",
+                          element: <AdminContractTestingPage />,
+                        },
+                        {
+                          path: "*",
+                          element: <Navigate replace to="overview" />,
+                        },
+                      ],
                     },
                     {
                       path: "*",
                       element: (
                         <NotFoundPage
-                          actionLabel="Open simulator"
-                          actionTo="/simulator"
-                          description="That simulator route does not exist."
+                          actionLabel="Open admin"
+                          actionTo="/admin"
+                          description="That admin route does not exist."
                           title="Page not found"
                         />
                       ),
                     },
                   ],
+                },
+                {
+                  path: "simulator",
+                  element: <LegacySimulatorRedirect />,
+                },
+                {
+                  path: "simulator/guide",
+                  element: <LegacySimulatorRedirect />,
+                },
+                {
+                  path: "simulator/system",
+                  element: <LegacySimulatorRedirect />,
+                },
+                {
+                  path: "simulator/:contractId",
+                  element: <LegacySimulatorRedirect />,
+                },
+                {
+                  path: "simulator/:contractId/*",
+                  element: <LegacySimulatorRedirect />,
                 },
               ],
             },

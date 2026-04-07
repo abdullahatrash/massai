@@ -117,7 +117,7 @@ After this step, the factory is no longer just local studio data. It becomes a r
 From the `Provision` tab, open:
 
 - the contract dashboard
-- the MaaSAI simulator view
+- the MaaSAI admin testing view
 
 Keep MaaSAI open in a second browser tab or on a second screen during the demo.
 

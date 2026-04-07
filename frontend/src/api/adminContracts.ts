@@ -1,4 +1,4 @@
-import { apiRequest } from "./client";
+import { apiClient, apiRequest, type ApiResponse } from "./client";
 
 export type DemoMilestonePayload = {
   approvalRequired: boolean;
@@ -29,6 +29,39 @@ export type CreateDemoContractResponse = {
   pilotType: string;
 };
 
+export type AdminContractListItem = {
+  deliveryDate: string | null;
+  id: string;
+  milestonesCompleted: number;
+  milestonesTotal: number;
+  pilotType: string | null;
+  productName: string | null;
+  providerId: string | null;
+  quantityTotal: number | null;
+  status: string | null;
+  statusBadge: string;
+};
+
+export type AdminNextMilestone = {
+  daysRemaining: number;
+  name: string;
+  plannedDate: string;
+};
+
+export type AdminContractOverview = AdminContractListItem & {
+  lastKnownState: Record<string, unknown>;
+  nextMilestone: AdminNextMilestone | null;
+  qualityTarget?: number | null;
+};
+
+export type AdminContractsListMeta = {
+  pagination: {
+    hasMore: boolean;
+    page: number;
+    pageSize: number;
+  };
+};
+
 export async function createDemoContract(
   payload: CreateDemoContractPayload,
   signal?: AbortSignal,
@@ -36,6 +69,34 @@ export async function createDemoContract(
   return apiRequest<CreateDemoContractResponse>("/api/v2/admin/demo/contracts", {
     body: payload as unknown as Record<string, unknown>,
     method: "POST",
+    signal,
+  });
+}
+
+export async function listAdminContracts(params?: {
+  page?: number;
+  pageSize?: number;
+}): Promise<ApiResponse<AdminContractListItem[], AdminContractsListMeta>> {
+  const query = new URLSearchParams();
+
+  if (params?.page) {
+    query.set("page", String(params.page));
+  }
+  if (params?.pageSize) {
+    query.set("pageSize", String(params.pageSize));
+  }
+
+  const suffix = query.size > 0 ? `?${query.toString()}` : "";
+  return apiClient.get<AdminContractListItem[], AdminContractsListMeta>(
+    `/api/v2/admin/contracts${suffix}`,
+  );
+}
+
+export async function getAdminContractOverview(
+  contractId: string,
+  signal?: AbortSignal,
+): Promise<AdminContractOverview> {
+  return apiRequest<AdminContractOverview>(`/api/v2/admin/contracts/${contractId}`, {
     signal,
   });
 }

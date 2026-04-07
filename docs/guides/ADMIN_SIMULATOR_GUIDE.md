@@ -1,11 +1,11 @@
 # MaaSAI Admin Simulator — Operator Guide
 
 This guide is for operators, QA testers, and anyone running demos from the MaaSAI dashboard.
-You do not need to edit code to use the simulator.
+You do not need to edit code to use the admin console.
 
 ## What The Admin Simulator Does
 
-The admin simulator is built into the MaaSAI frontend. It lets you:
+The admin console is built into the MaaSAI frontend. It lets you:
 
 1. View all active contracts in one dashboard.
 2. Create new demo contracts from pilot templates (Factor, Tasowheel, E4M).
@@ -34,11 +34,11 @@ Log in with:
 - Username: `admin@test.com`
 - Password: `password`
 
-After login, navigate to the simulator at [http://localhost:3000/simulator](http://localhost:3000/simulator).
+After login, navigate to the admin console at [http://localhost:3000/admin](http://localhost:3000/admin).
 
 ## The Simulator Layout
 
-The simulator has two main views:
+The admin console has two main views:
 
 1. **Operations Deck** — the landing page showing all contracts as cards with stats.
 2. **Contract Workspace** — the detail view for a single contract, with four tabs.
@@ -51,7 +51,7 @@ The sidebar on the left shows all available contracts. Click any contract to ope
 
 ### 1. Open the Operations Deck
 
-After logging in, go to `/simulator`. You will see:
+After logging in, go to `/admin`. You will see:
 
 - **Stat cards** at the top: total contracts, pilot types, average milestone completion, telemetry status.
 - **Contract grid** below: one card per contract showing pilot type, product name, milestone progress, and status badge.
@@ -268,7 +268,7 @@ Admin Simulator (frontend)
 
 Keycloak
   -> issues tokens for the provider service account
-  -> the simulator uses client_credentials flow (no manual login needed)
+  -> the admin testing tools use client_credentials flow (no manual login needed)
 
 MaaSAI Backend
   -> validates data against the contract-bound ingest profile
@@ -318,7 +318,7 @@ Consumer Dashboard
 
 For a clean demo walkthrough:
 
-1. Open the simulator at `/simulator`
+1. Open the admin console at `/admin`
 2. Click **New Contract** and pick **Factor**
 3. Set quantity to `500` and a future delivery date
 4. Create the contract
@@ -328,7 +328,7 @@ For a clean demo walkthrough:
 8. Click **Run scenario**
 9. While it runs, open a second tab as `consumer-factor@test.com`
 10. Point out the contract state, milestones, and alerts updating
-11. Back in the simulator, go to **Milestones** tab
+11. Back in the admin console, go to **Milestones** tab
 12. Complete the first pending milestone
 13. Show the milestone appearing as completed on the consumer dashboard
 14. Optionally enable **Continuous** mode to build up data history

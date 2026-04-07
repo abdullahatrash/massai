@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
+import { listAdminContracts } from "../../api/adminContracts";
 import { ApiError, apiRequest } from "../../api/client";
 import { useAuth } from "../../auth/AuthProvider";
 import {
@@ -90,7 +91,7 @@ export function SimulatorLayout() {
       try {
         const [healthcheck, contracts] = await Promise.all([
           apiRequest<HealthcheckPayload>("/health"),
-          apiRequest<SimulatorContract[]>("/api/v1/contracts"),
+          listAdminContracts().then((response) => response.data),
         ]);
 
         if (!isActive) {
@@ -118,7 +119,7 @@ export function SimulatorLayout() {
         const message =
           error instanceof ApiError
             ? error.message
-            : "Unable to load the simulator control surface.";
+            : "Unable to load the admin control plane.";
 
         startTransition(() => {
           setConnectionState({
@@ -167,7 +168,7 @@ export function SimulatorLayout() {
         )
       : 0;
 
-  const isOnIndex = location.pathname === "/simulator" || location.pathname === "/simulator/";
+  const isOnIndex = location.pathname === "/admin" || location.pathname === "/admin/";
 
   return (
     <div className={cn("sim-shell", sidebarCollapsed && "sim-shell--collapsed")}>
@@ -252,7 +253,7 @@ export function SimulatorLayout() {
                 cn("sim-nav-item", isActive && "sim-nav-item--active")
               }
               end
-              to="/simulator"
+              to="/admin"
             >
               {sidebarCollapsed ? (
                 <div className="grid size-8 place-items-center rounded-md bg-white/[0.06] text-[0.65rem] font-bold text-slate-300">
@@ -272,7 +273,7 @@ export function SimulatorLayout() {
               className={({ isActive }) =>
                 cn("sim-nav-item", isActive && "sim-nav-item--active")
               }
-              to="/simulator/system"
+              to="/admin/system"
             >
               {sidebarCollapsed ? (
                 <div className="grid size-8 place-items-center rounded-md bg-white/[0.06] text-[0.65rem] font-bold text-slate-300">
@@ -330,7 +331,7 @@ export function SimulatorLayout() {
                         )
                       }
                       key={contract.id}
-                      to={`/simulator/${contract.id}`}
+                      to={`/admin/contracts/${contract.id}/overview`}
                     >
                       {sidebarCollapsed ? (
                         <div
@@ -397,7 +398,7 @@ export function SimulatorLayout() {
               className={({ isActive }) =>
                 cn("sim-nav-item", isActive && "sim-nav-item--active")
               }
-              to="/simulator/guide"
+              to="/admin/guide"
             >
               {sidebarCollapsed ? (
                 <div className="grid size-8 place-items-center rounded-md bg-white/[0.06] text-[0.65rem] font-bold text-slate-300">
@@ -488,15 +489,15 @@ export function SimulatorLayout() {
               <nav className="flex items-center gap-1.5 text-[0.78rem]">
                 <Button
                   className="h-auto p-0 text-[0.78rem] text-slate-400 hover:text-white"
-                  onClick={() => void navigate("/simulator")}
+                  onClick={() => void navigate("/admin")}
                   variant="link"
                 >
                   Operations
                 </Button>
                 <span className="text-slate-600">/</span>
                 <span className="font-medium text-white">
-                  {location.pathname === "/simulator/system" ? "System Health"
-                    : location.pathname === "/simulator/guide" ? "Guide"
+                  {location.pathname === "/admin/system" ? "System Health"
+                    : location.pathname === "/admin/guide" ? "Guide"
                     : "Contract"}
                 </span>
               </nav>

@@ -105,7 +105,7 @@ export function SimulatorIndex() {
           </h2>
           <p className="max-w-xl text-[0.82rem] leading-relaxed text-slate-400">
             Monitor contract health, inspect ingested data, debug issues,
-            and run simulations — all from one operator console.
+            and launch lightweight contract testing from one operator console.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -117,7 +117,7 @@ export function SimulatorIndex() {
             <Plus data-icon="inline-start" />
             New Contract
           </Button>
-          <Link to="/simulator/guide">
+          <Link to="/admin/guide">
             <Button size="sm" type="button" variant="outline">
               <BookOpen data-icon="inline-start" />
               Guide
@@ -199,7 +199,7 @@ export function SimulatorIndex() {
                   : 0;
 
               return (
-                <Link key={contract.id} to={`/simulator/${contract.id}`}>
+                <Link key={contract.id} to={`/admin/contracts/${contract.id}/overview`}>
                   <div className="sim-contract-card group">
                     {/* Health accent line */}
                     <div

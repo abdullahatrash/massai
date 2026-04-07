@@ -11,7 +11,8 @@ import {
   type DocumentReferenceDraftErrors,
 } from "@/components/DocumentReferenceEditor";
 
-import { apiRequest, ApiError } from "../../api/client";
+import { getAdminContractOverview } from "../../api/adminContracts";
+import { ApiError } from "../../api/client";
 import { fetchContractIngestSpec } from "../../api/ingestSpec";
 import {
   fetchSimulatorMilestones,
@@ -25,11 +26,6 @@ import type { SimulatorContract } from "./simulatorShared";
 type MilestoneTriggerPanelProps = {
   contract: SimulatorContract;
   onSubmissionSettled: () => void;
-};
-
-type ContractOverview = {
-  id: string;
-  lastKnownState: Record<string, unknown>;
 };
 
 function parseRoutingStep(milestoneRef: string | null, fallback = 10) {
@@ -157,9 +153,7 @@ export function MilestoneTriggerPanel({
       try {
         const [nextMilestones, overview] = await Promise.all([
           fetchSimulatorMilestones(contract.id, signal ?? new AbortController().signal),
-          apiRequest<ContractOverview>(`/api/v1/contracts/${contract.id}`, {
-            signal: signal ?? new AbortController().signal,
-          }),
+          getAdminContractOverview(contract.id, signal ?? new AbortController().signal),
         ]);
         if (!isActive) {
           return;
@@ -283,9 +277,7 @@ export function MilestoneTriggerPanel({
 
       const [nextMilestones, overview] = await Promise.all([
         fetchSimulatorMilestones(contract.id, controller.signal),
-        apiRequest<ContractOverview>(`/api/v1/contracts/${contract.id}`, {
-          signal: controller.signal,
-        }),
+        getAdminContractOverview(contract.id, controller.signal),
       ]);
 
       startTransition(() => {
