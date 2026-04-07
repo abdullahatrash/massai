@@ -6,6 +6,8 @@ This repository contains the local development stack for the MaaSAI monitoring p
 
 - A FastAPI backend for ingest, monitoring, alerts, milestones, analytics, notifications, and audit endpoints
 - A React 19 consumer dashboard for tracking contracts end to end
+- An admin operations console in the frontend for system health, contract inspection, and lightweight testing
+- A Python-based Simulator Studio for shaping factory data into MaaSAI's canonical intake model
 - Keycloak-based authentication and role-based authorization
 - PostgreSQL for operational storage and query performance
 - Mock provider simulators for the `factor`, `tasowheel`, and `e4m` pilot flows
@@ -57,8 +59,9 @@ For the detailed architecture and product rationale, see:
 ```text
 .
 ├── backend/           FastAPI API, domain services, workers, schemas, migrations, tests
-├── frontend/          React 19 dashboard, auth, simulator UI, charts, route layouts
+├── frontend/          React 19 dashboard, auth, admin UI, charts, route layouts
 ├── mock-sensors/      Mock provider simulators and named scenarios
+├── simulator-studio/  Streamlit-based factory modeling and ingest-profile workbench
 ├── user-service/      Keycloak realm export, seeded users, local setup scripts
 ├── docs/              Planning and supporting documents
 ├── docker-compose.yml
@@ -92,12 +95,34 @@ The frontend is a React 19 application built with Vite. It includes:
 - Contract list and contract detail routes
 - Overview, milestones, feed, alerts, documents, analytics, and notifications pages
 - Protected routes backed by Keycloak login
-- A development simulator area for admin users
+- An admin operations area at `/admin` for admin users
+- Lightweight contract testing tools inside the admin area
 
 Main entry points:
 
 - [frontend/src/main.tsx](/Users/abodiatrash/projects/massai/frontend/src/main.tsx)
 - [frontend/src/router.tsx](/Users/abodiatrash/projects/massai/frontend/src/router.tsx)
+
+### Simulator Studio
+
+The Simulator Studio is a separate Streamlit app used when real factory integrations are not available yet. It exists to standardize provider-side data before it reaches the backend and to keep MaaSAI's intake model stable across different factory implementations.
+
+It is the right tool for:
+
+- Factory template authoring
+- Ingest profile and schema shaping
+- Sensor and scenario configuration
+- Local draft factory setup
+- Provisioning modeled/demo factories into MaaSAI
+
+It is intentionally separate from the frontend admin console:
+
+- Studio at `3001` is the factory data workbench
+- Admin at `3000/admin` is the operational control plane
+
+Main entry point:
+
+- [simulator-studio/simulator_studio/app.py](/Users/abodiatrash/projects/massai/simulator-studio/simulator_studio/app.py)
 
 ### Identity And Access
 
@@ -150,6 +175,7 @@ This starts:
 - `keycloak-setup`
 - `backend`
 - `frontend`
+- `simulator-studio`
 - `mock-factor`
 - `mock-tasowheel`
 - `mock-e4m`
@@ -165,8 +191,10 @@ curl http://localhost:3000
 Helpful local URLs:
 
 - Frontend: `http://localhost:3000`
+- Admin console: `http://localhost:3000/admin`
 - Backend API: `http://localhost:8000`
 - Backend docs: `http://localhost:8000/docs`
+- Simulator Studio: `http://localhost:3001`
 - Keycloak: `http://localhost:8080/admin`
 
 ## Seeded Development Users
@@ -190,13 +218,15 @@ Typical local flow:
 1. Start the Docker Compose stack
 2. Log into the frontend with a seeded consumer or admin account
 3. Let the simulators push updates into the backend
-4. Open contracts in the dashboard and observe:
+4. Use the Simulator Studio when you need to model a factory, shape an ingest profile, or provision a demo contract
+5. Use the admin console at `/admin` for contract/system inspection and lightweight testing
+6. Open contracts in the dashboard and observe:
    - progress updates
    - milestone state changes
    - alert creation and acknowledgement
    - notification count changes
    - analytics and document views
-5. Use the simulator area as an admin to trigger scenarios manually
+7. Use the admin testing area to inspect ingest history, view events, and run contract-focused debug flows
 
 ## Technology Stack
 
